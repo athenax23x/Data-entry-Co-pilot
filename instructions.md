@@ -375,7 +375,7 @@ If a command is missing required input (e.g., `UPDATE FIELD` with no field name)
 
 **`UPDATE FIELD` details:**
 
-- `<field>` is a path from the Fields Reference (e.g., `contact_information.phone`, `business_address.city`, `personal_information.owners[1].last_name`) or a short field name that matches exactly one field (e.g., `phone`, `city`, `ein`). Owner fields without an index mean the primary owner. If a short name is ambiguous (e.g., `state` matches both `business_address.state` and `business_information.state_of_formation`), ask which one is meant.
+- `<field>` is a path from the Fields Reference (e.g., `contact_information.phone`, `business_address.city`, `personal_information.owners[1].last_name`) or a short field name that matches exactly one field (e.g., `phone`, `city`, `ein`). Owner fields without an index mean the primary owner; owner indexes are 0-based, like the `owners` array. If a short name ever matches more than one field, ask which one is meant.
 - `<value>` is normalized to the field's format. If it can't be normalized, say so and ask again; do not store a malformed value.
 - The field's status becomes `verified`, its `source_context` is the user's text, its `source_document` is the new `update_field` source, and any previous value moves to `history`.
 - `<field> = confirm` keeps the current value and sets it to `verified`. If the field is `missing`, there is nothing to confirm; say so. If the field is in `conflict`, ask which value to keep.
@@ -499,8 +499,12 @@ CSV is a **flat export view** of one or more records; it is not a storage format
   1. `merchant_id`
   2. The original 11 columns: `First Name, Last Name, Business Name, Street Address, City, State, ZIP, Email, Phone, EIN / Notes, Status`
   3. `Business Entity Type`, `DBA Name`
-  4. `current_processor`, `mcc`, `monthly_card_volume`, `average_ticket`, `high_ticket`, `card_present_percentage`, `keyed_percentage`, `ecommerce_percentage`, `routing_number`, `ownership_percentage`
-  5. Status columns: `first_name_status`, `last_name_status`, `business_name_status`, `dba_name_status`, `business_entity_type_status`, `street_address_status`, `city_status`, `state_status`, `zip_status`, `email_status`, `phone_status`, `ein_status`
+  4. `business_description`, `business_start_date`, `state_of_formation`, `website`
+  5. `current_processor`, `mcc`, `monthly_card_volume`, `average_ticket`, `high_ticket`, `card_present_percentage`, `keyed_percentage`, `ecommerce_percentage`, `routing_number`
+  6. `ownership_percentage`, `other_owners`
+  7. `products_and_services_description`, `products_and_services_items`
+  8. Status columns: `first_name_status`, `last_name_status`, `business_name_status`, `dba_name_status`, `business_entity_type_status`, `street_address_status`, `city_status`, `state_status`, `zip_status`, `email_status`, `phone_status`, `ein_status`
+  9. One `custom.<key>` column for each key of `custom_fields` used by any exported record, sorted by key, after all the columns above.
 - **Where each column comes from:**
 
   | Column | Record path |
@@ -512,11 +516,17 @@ CSV is a **flat export view** of one or more records; it is not a storage format
   | Email, Phone | `contact_information.*` |
   | EIN / Notes | `EIN: <ein>; Routing: <processing_information.routing_number>`, including only the parts that have a value |
   | Business Entity Type | `business_entity_type.value` exactly as stored (e.g., `sole_proprietorship`); `unknown` when `null` |
+  | business_description, business_start_date, state_of_formation, website | `business_information.*` |
+  | current_processor … routing_number | `processing_information.*` (the nine fields) |
   | ownership_percentage | Primary owner's `ownership_percentage` |
+  | other_owners | Every owner except the primary one, as `First Last (NN%)`, joined with `; ` |
+  | products_and_services_description | `products_and_services.description` |
+  | products_and_services_items | The `value` of each item in `products_and_services.items`, joined with `; ` |
+  | `custom.<key>` | `custom_fields.<key>.value` |
   | Status | `record_status` |
   | `*_status` columns | The `status` of the matching field |
 
-- Empty values in the 11 original columns are written as `[MISSING]`. Other empty values are left blank.
+- Empty values in the required original columns (every one except `EIN / Notes` and `Status`) are written as `[MISSING]`. All other empty values are left blank.
 - A field in `conflict` is exported with its current `value` and `conflict` in its status column. Competing candidates are not exported.
 - Follow RFC 4180: separate with commas, wrap any value containing a comma, quote or line break in double quotes, and escape inner quotes by doubling them (`""`). Encode as UTF-8.
 
