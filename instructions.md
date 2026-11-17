@@ -131,11 +131,11 @@ A record has these top-level keys, all required except `custom_fields`. No other
 | `record_status` | string | `Complete`, `Incomplete` or `Needs Review` (see [Record Status](#record-status)). |
 | `business_entity_type` | field | Legal entity type. |
 | `personal_information` | object | `owners`: an array of owner objects. |
-| `business_information` | object | `legal_business_name`, `dba_name`, `business_description`, `business_start_date`, `state_of_formation`, `website`. |
+| `business_information` | object | `legal_business_name`, `dba_name`, `business_description`, `refund_policy`, `business_start_date`, `state_of_formation`, `website`. |
 | `business_address` | object | `street_address`, `city`, `state`, `zip`. |
 | `contact_information` | object | `email`, `phone`. |
 | `ein` | field | Employer Identification Number. |
-| `processing_information` | object | `current_processor`, `mcc`, `monthly_card_volume`, `average_ticket`, `high_ticket`, `card_present_percentage`, `keyed_percentage`, `ecommerce_percentage`, `routing_number`. |
+| `processing_information` | object | `mcc`, `monthly_card_volume`, `average_ticket`, `high_ticket`, `card_present_percentage`, `keyed_percentage`, `ecommerce_percentage`, `routing_number`. |
 | `products_and_services` | object | `description` (field) and `items` (array of fields). |
 | `sources` | array | Registry of every message or document that contributed information. |
 | `conflicts` | array | Competing values (see [Conflicts](#conflicts)). |
@@ -197,11 +197,13 @@ Paths are written relative to the record. Values are always stored **normalized*
 | `personal_information.owners[].is_primary_owner` | Boolean (not a field object). Exactly one owner is primary. | — |
 | `personal_information.owners[].first_name` | String. As in Mode 1 (middle initials stay with the first name). | Primary owner |
 | `personal_information.owners[].last_name` | String | Primary owner |
+| `personal_information.owners[].date_of_birth` | US date `MM/DD/YYYY` (e.g., `01/15/1980`), a real calendar date | No |
 | `personal_information.owners[].title` | String (e.g., "Owner", "President") | No |
 | `personal_information.owners[].ownership_percentage` | Number, 0–100 | No |
 | `business_information.legal_business_name` | String. **Legal** name only; never filled automatically from an owner's personal name. | Yes (see sole proprietorship rule) |
 | `business_information.dba_name` | String, exactly as given | No (see sole proprietorship rule) |
 | `business_information.business_description` | String | No |
+| `business_information.refund_policy` | String, the merchant's refund / return policy as described | No |
 | `business_information.business_start_date` | `YYYY-MM-DD` | No |
 | `business_information.state_of_formation` | 2-letter USPS state code | No |
 | `business_information.website` | URI (`https://…`) | No |
@@ -212,7 +214,6 @@ Paths are written relative to the record. Values are always stored **normalized*
 | `contact_information.email` | Lowercase email address | Yes |
 | `contact_information.phone` | `+1 (XXX) XXX-XXXX` | Yes |
 | `ein` | `XX-XXXXXXX` | No |
-| `processing_information.current_processor` | String | No |
 | `processing_information.mcc` | 4-digit string | No |
 | `processing_information.monthly_card_volume` | Number, USD, ≥ 0 | No |
 | `processing_information.average_ticket` | Number, USD, ≥ 0 | No |
@@ -375,7 +376,7 @@ If a command is missing required input (e.g., `UPDATE FIELD` with no field name)
 
 **`UPDATE FIELD` details:**
 
-- `<field>` is a path from the Fields Reference (e.g., `contact_information.phone`, `business_address.city`, `personal_information.owners[1].last_name`) or a short field name that matches exactly one field (e.g., `phone`, `city`, `ein`). Owner fields without an index mean the primary owner. If a short name is ambiguous (e.g., `state` matches both `business_address.state` and `business_information.state_of_formation`), ask which one is meant.
+- `<field>` is a path from the Fields Reference (e.g., `contact_information.phone`, `business_address.city`, `personal_information.owners[1].last_name`) or a short field name that matches exactly one field (e.g., `phone`, `city`, `ein`). Owner fields without an index mean the primary owner; owner indexes are 0-based, like the `owners` array. If a short name ever matches more than one field, ask which one is meant.
 - `<value>` is normalized to the field's format. If it can't be normalized, say so and ask again; do not store a malformed value.
 - The field's status becomes `verified`, its `source_context` is the user's text, its `source_document` is the new `update_field` source, and any previous value moves to `history`.
 - `<field> = confirm` keeps the current value and sets it to `verified`. If the field is `missing`, there is nothing to confirm; say so. If the field is in `conflict`, ask which value to keep.
@@ -418,6 +419,7 @@ This is a made-up record in the exact `schema.json` structure: a sole proprietor
         "is_primary_owner": true,
         "first_name": { "value": "Alex", "status": "inferred", "source_context": "alex sample", "source_document": "SRC-001" },
         "last_name": { "value": "Sample", "status": "inferred", "source_context": "alex sample", "source_document": "SRC-001" },
+        "date_of_birth": { "value": null, "status": "missing", "source_context": null, "source_document": null },
         "title": { "value": null, "status": "missing", "source_context": null, "source_document": null },
         "ownership_percentage": { "value": null, "status": "missing", "source_context": null, "source_document": null }
       }
@@ -427,6 +429,7 @@ This is a made-up record in the exact `schema.json` structure: a sole proprietor
     "legal_business_name": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "dba_name": { "value": "Sample Mobile Detailing", "status": "inferred", "source_context": "dba Sample Mobile Detailing", "source_document": "SRC-001" },
     "business_description": { "value": null, "status": "missing", "source_context": null, "source_document": null },
+    "refund_policy": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "business_start_date": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "state_of_formation": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "website": { "value": null, "status": "missing", "source_context": null, "source_document": null }
@@ -450,7 +453,6 @@ This is a made-up record in the exact `schema.json` structure: a sole proprietor
   },
   "ein": { "value": null, "status": "missing", "source_context": null, "source_document": null },
   "processing_information": {
-    "current_processor": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "mcc": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "monthly_card_volume": { "value": null, "status": "missing", "source_context": null, "source_document": null },
     "average_ticket": { "value": null, "status": "missing", "source_context": null, "source_document": null },
@@ -499,8 +501,12 @@ CSV is a **flat export view** of one or more records; it is not a storage format
   1. `merchant_id`
   2. The original 11 columns: `First Name, Last Name, Business Name, Street Address, City, State, ZIP, Email, Phone, EIN / Notes, Status`
   3. `Business Entity Type`, `DBA Name`
-  4. `current_processor`, `mcc`, `monthly_card_volume`, `average_ticket`, `high_ticket`, `card_present_percentage`, `keyed_percentage`, `ecommerce_percentage`, `routing_number`, `ownership_percentage`
-  5. Status columns: `first_name_status`, `last_name_status`, `business_name_status`, `dba_name_status`, `business_entity_type_status`, `street_address_status`, `city_status`, `state_status`, `zip_status`, `email_status`, `phone_status`, `ein_status`
+  4. `business_description`, `refund_policy`, `business_start_date`, `state_of_formation`, `website`
+  5. `mcc`, `monthly_card_volume`, `average_ticket`, `high_ticket`, `card_present_percentage`, `keyed_percentage`, `ecommerce_percentage`, `routing_number`
+  6. `date_of_birth`, `ownership_percentage`, `other_owners`
+  7. `products_and_services_description`, `products_and_services_items`
+  8. Status columns: `first_name_status`, `last_name_status`, `business_name_status`, `dba_name_status`, `business_entity_type_status`, `street_address_status`, `city_status`, `state_status`, `zip_status`, `email_status`, `phone_status`, `ein_status`
+  9. One `custom.<key>` column for each key of `custom_fields` used by any exported record, sorted by key, after all the columns above.
 - **Where each column comes from:**
 
   | Column | Record path |
@@ -512,11 +518,18 @@ CSV is a **flat export view** of one or more records; it is not a storage format
   | Email, Phone | `contact_information.*` |
   | EIN / Notes | `EIN: <ein>; Routing: <processing_information.routing_number>`, including only the parts that have a value |
   | Business Entity Type | `business_entity_type.value` exactly as stored (e.g., `sole_proprietorship`); `unknown` when `null` |
+  | business_description, refund_policy, business_start_date, state_of_formation, website | `business_information.*` |
+  | mcc … routing_number | `processing_information.*` (the eight fields) |
+  | date_of_birth | Primary owner's `date_of_birth`, as stored (`MM/DD/YYYY`) |
   | ownership_percentage | Primary owner's `ownership_percentage` |
+  | other_owners | Every owner except the primary one, as `First Last (NN%)`, joined with `; ` |
+  | products_and_services_description | `products_and_services.description` |
+  | products_and_services_items | The `value` of each item in `products_and_services.items`, joined with `; ` |
+  | `custom.<key>` | `custom_fields.<key>.value` |
   | Status | `record_status` |
   | `*_status` columns | The `status` of the matching field |
 
-- Empty values in the 11 original columns are written as `[MISSING]`. Other empty values are left blank.
+- Empty values in the required original columns (every one except `EIN / Notes` and `Status`) are written as `[MISSING]`. All other empty values are left blank.
 - A field in `conflict` is exported with its current `value` and `conflict` in its status column. Competing candidates are not exported.
 - Follow RFC 4180: separate with commas, wrap any value containing a comma, quote or line break in double quotes, and escape inner quotes by doubling them (`""`). Encode as UTF-8.
 
