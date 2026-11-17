@@ -8,3 +8,14 @@ merchant_data/
 # Saved merchant records and exported files
 *.merchants.json
 *.csv
+
+# Exception: the clearly-fake sample CSVs directly in tests/fixtures/ (every file there is scanned by
+# tests/test_fixtures.py). Other CSVs, *.merchants.json and data/ folders (also under tests/fixtures/) stay ignored.
+!tests/fixtures/*.csv
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
