@@ -1,0 +1,10 @@
+# Merchant data must never be committed. Saved records and exports stay local.
+
+# Data folders (includes the default Notebook save path ./merchant_data/)
+data/
+merchants/
+merchant_data/
+
+# Saved merchant records and exported files
+*.merchants.json
+*.csv
