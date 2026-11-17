@@ -1,0 +1,453 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:merchant-context-notebook:schema:merchant-record:v1",
+  "title": "Merchant Context Notebook - Merchant Record",
+  "description": "Standardized structure for one merchant record in Merchant Notebook mode. Every extracted value is wrapped in a field object (value, status, source_context, source_document). Missing information is represented as value null with status 'missing'. Competing values are preserved in 'conflicts'; verified values are never silently overwritten.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "merchant_id",
+    "record_status",
+    "business_entity_type",
+    "personal_information",
+    "business_information",
+    "business_address",
+    "contact_information",
+    "ein",
+    "processing_information",
+    "products_and_services",
+    "sources",
+    "conflicts",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Version of this record structure. Increment when the structure changes incompatibly.",
+      "type": "integer",
+      "const": 1
+    },
+    "merchant_id": {
+      "description": "Unique, immutable record identifier: MCN-YYYYMMDD-NNN.",
+      "type": "string",
+      "pattern": "^MCN-[0-9]{8}-[0-9]{3,}$"
+    },
+    "record_status": {
+      "description": "Derived summary status of the whole record.",
+      "type": "string",
+      "enum": ["Complete", "Incomplete", "Needs Review"]
+    },
+    "business_entity_type": {
+      "$ref": "#/$defs/entityTypeField"
+    },
+    "personal_information": {
+      "description": "Owners / principals of the business.",
+      "type": "object",
+      "required": ["owners"],
+      "properties": {
+        "owners": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/owner" }
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "business_information": {
+      "type": "object",
+      "required": [
+        "legal_business_name",
+        "dba_name",
+        "business_description",
+        "business_start_date",
+        "state_of_formation",
+        "website"
+      ],
+      "properties": {
+        "legal_business_name": {
+          "description": "Legal business name only. Never auto-filled from the owner's personal name.",
+          "$ref": "#/$defs/stringField"
+        },
+        "dba_name": {
+          "description": "DBA / trade name.",
+          "$ref": "#/$defs/stringField"
+        },
+        "business_description": { "$ref": "#/$defs/stringField" },
+        "business_start_date": { "$ref": "#/$defs/dateField" },
+        "state_of_formation": { "$ref": "#/$defs/stateField" },
+        "website": { "$ref": "#/$defs/uriField" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "business_address": {
+      "type": "object",
+      "required": ["street_address", "city", "state", "zip"],
+      "properties": {
+        "street_address": {
+          "description": "Street number and name, including apartment/suite. A P.O. Box should be marked needs_review.",
+          "$ref": "#/$defs/stringField"
+        },
+        "city": { "$ref": "#/$defs/stringField" },
+        "state": { "$ref": "#/$defs/stateField" },
+        "zip": { "$ref": "#/$defs/zipField" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "contact_information": {
+      "type": "object",
+      "required": ["email", "phone"],
+      "properties": {
+        "email": { "$ref": "#/$defs/emailField" },
+        "phone": { "$ref": "#/$defs/phoneField" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "ein": {
+      "$ref": "#/$defs/einField"
+    },
+    "processing_information": {
+      "description": "Card processing details, captured when available. Never store full card numbers, CVV/CVC, passwords, or OTPs.",
+      "type": "object",
+      "required": [
+        "current_processor",
+        "mcc",
+        "monthly_card_volume",
+        "average_ticket",
+        "high_ticket",
+        "card_present_percentage",
+        "keyed_percentage",
+        "ecommerce_percentage",
+        "routing_number"
+      ],
+      "properties": {
+        "current_processor": { "$ref": "#/$defs/stringField" },
+        "mcc": {
+          "description": "4-digit Merchant Category Code.",
+          "$ref": "#/$defs/mccField"
+        },
+        "monthly_card_volume": {
+          "description": "Monthly card processing volume in USD.",
+          "$ref": "#/$defs/amountField"
+        },
+        "average_ticket": {
+          "description": "Average transaction amount in USD.",
+          "$ref": "#/$defs/amountField"
+        },
+        "high_ticket": {
+          "description": "Highest expected single transaction amount in USD.",
+          "$ref": "#/$defs/amountField"
+        },
+        "card_present_percentage": { "$ref": "#/$defs/percentageField" },
+        "keyed_percentage": { "$ref": "#/$defs/percentageField" },
+        "ecommerce_percentage": { "$ref": "#/$defs/percentageField" },
+        "routing_number": {
+          "description": "9-digit ABA routing number for settlement.",
+          "$ref": "#/$defs/routingNumberField"
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "products_and_services": {
+      "type": "object",
+      "required": ["description", "items"],
+      "properties": {
+        "description": {
+          "description": "Summary of what the merchant sells.",
+          "$ref": "#/$defs/stringField"
+        },
+        "items": {
+          "description": "Individual products or services.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/stringField" }
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "sources": {
+      "description": "Registry of every message or document that contributed information. Field-level source_document values should reference a source_id here.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "conflicts": {
+      "description": "Competing values for a field. The field itself keeps its current value (the verified value, if any) and status 'conflict' until the user resolves it.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/conflict" }
+    },
+    "custom_fields": {
+      "description": "Extension point for future merchant dashboard fields. Each entry must use the standard field structure.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false,
+
+  "$defs": {
+    "status": {
+      "description": "inferred: identified by AI, not confirmed. verified: explicitly confirmed by the user. missing: unavailable. conflict: multiple inconsistent values. needs_review: ambiguous information.",
+      "type": "string",
+      "enum": ["inferred", "verified", "missing", "conflict", "needs_review"]
+    },
+
+    "field": {
+      "description": "Standard wrapper for every extracted value. Values are stored normalized; if a value cannot be normalized, store null with status needs_review and keep the raw text in source_context.",
+      "type": "object",
+      "required": ["value", "status", "source_context", "source_document"],
+      "properties": {
+        "value": {
+          "description": "Normalized value, or null when missing."
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "source_context": {
+          "description": "Short excerpt of the text the value was taken from.",
+          "type": ["string", "null"]
+        },
+        "source_document": {
+          "description": "Identifier of the message or document the value came from (should match a sources[].source_id).",
+          "type": ["string", "null"]
+        },
+        "updated_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "history": {
+          "description": "Previous values replaced by an explicit user update.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/historyEntry" }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "const": "missing" } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": { "value": { "type": "null" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "enum": ["inferred", "verified", "conflict"] } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": { "value": { "not": { "type": "null" } } }
+          }
+        }
+      ]
+    },
+
+    "stringField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "minLength": 1 } } }
+      ]
+    },
+    "dateField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "format": "date" } } }
+      ]
+    },
+    "uriField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "format": "uri" } } }
+      ]
+    },
+    "emailField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "format": "email", "pattern": "^[^A-Z]*$" } } }
+      ]
+    },
+    "phoneField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^\\+1 \\([0-9]{3}\\) [0-9]{3}-[0-9]{4}$" } } }
+      ]
+    },
+    "stateField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^[A-Z]{2}$" } } }
+      ]
+    },
+    "zipField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^[0-9]{5}(-[0-9]{4})?$" } } }
+      ]
+    },
+    "einField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^[0-9]{2}-[0-9]{7}$" } } }
+      ]
+    },
+    "routingNumberField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^[0-9]{9}$" } } }
+      ]
+    },
+    "mccField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^[0-9]{4}$" } } }
+      ]
+    },
+    "amountField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["number", "null"], "minimum": 0 } } }
+      ]
+    },
+    "percentageField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["number", "null"], "minimum": 0, "maximum": 100 } } }
+      ]
+    },
+    "entityTypeField": {
+      "description": "Legal entity type. Use 'unknown' (or value null with status missing) when it cannot be determined; never guess.",
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        {
+          "properties": {
+            "value": {
+              "enum": [
+                "sole_proprietorship",
+                "llc",
+                "corporation",
+                "s_corporation",
+                "c_corporation",
+                "general_partnership",
+                "limited_partnership",
+                "limited_liability_partnership",
+                "other",
+                "unknown",
+                null
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    "owner": {
+      "description": "One owner / principal. Ownership percentage is captured when available.",
+      "type": "object",
+      "required": ["owner_id", "is_primary_owner", "first_name", "last_name", "title", "ownership_percentage"],
+      "properties": {
+        "owner_id": {
+          "description": "Identifier unique within this record, e.g. OWN-1.",
+          "type": "string",
+          "minLength": 1
+        },
+        "is_primary_owner": { "type": "boolean" },
+        "first_name": { "$ref": "#/$defs/stringField" },
+        "last_name": { "$ref": "#/$defs/stringField" },
+        "title": { "$ref": "#/$defs/stringField" },
+        "ownership_percentage": { "$ref": "#/$defs/percentageField" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+
+    "source": {
+      "type": "object",
+      "required": ["source_id", "source_type", "received_at"],
+      "properties": {
+        "source_id": {
+          "description": "Identifier referenced by field-level source_document, e.g. SRC-001.",
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "type": "string",
+          "enum": ["new_merchant", "add_context", "update_field", "loaded_file", "uploaded_document", "other"]
+        },
+        "label": {
+          "description": "Human-readable name, e.g. a file name or 'Message 3'.",
+          "type": ["string", "null"]
+        },
+        "received_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "historyEntry": {
+      "type": "object",
+      "required": ["value", "status", "replaced_at"],
+      "properties": {
+        "value": {},
+        "status": { "$ref": "#/$defs/status" },
+        "source_context": { "type": ["string", "null"] },
+        "source_document": { "type": ["string", "null"] },
+        "replaced_at": { "type": ["string", "null"], "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+
+    "conflict": {
+      "type": "object",
+      "required": ["conflict_id", "field_path", "current_value", "current_status", "candidates", "resolution"],
+      "properties": {
+        "conflict_id": { "type": "string", "minLength": 1 },
+        "field_path": {
+          "description": "JSON Pointer to the conflicted field, e.g. /contact_information/phone or /personal_information/owners/0/last_name.",
+          "type": "string",
+          "pattern": "^(/[^/]+)+$"
+        },
+        "current_value": {
+          "description": "The value the field currently holds. If it was verified, it stays in place until the user resolves the conflict."
+        },
+        "current_status": {
+          "description": "Status the field held before the conflict was detected.",
+          "$ref": "#/$defs/status"
+        },
+        "candidates": {
+          "description": "Competing values, each with its own source.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["value", "source_context", "source_document"],
+            "properties": {
+              "value": {},
+              "source_context": { "type": ["string", "null"] },
+              "source_document": { "type": ["string", "null"] },
+              "detected_at": { "type": ["string", "null"], "format": "date-time" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "resolution": {
+          "type": "object",
+          "required": ["state"],
+          "properties": {
+            "state": { "type": "string", "enum": ["open", "resolved"] },
+            "resolved_value": {},
+            "resolved_at": { "type": ["string", "null"], "format": "date-time" }
+          },
+          "additionalProperties": false,
+          "if": { "properties": { "state": { "const": "resolved" } } },
+          "then": { "required": ["state", "resolved_value", "resolved_at"] }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
