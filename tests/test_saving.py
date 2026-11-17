@@ -1,6 +1,7 @@
 """Saving happens only on request, and a failed save is always reported as a failure."""
 import errno
 import json
+import os
 import stat
 
 import pytest
@@ -32,8 +33,16 @@ def test_save_writes_exactly_one_valid_file_for_the_requested_merchant(session, 
     saved = json.loads((data_dir / f"{first}.json").read_text(encoding="utf-8"))
     assert saved == session.records[first]
     assert store.validate_record(saved) == []
-    assert stat.S_IMODE((data_dir / f"{first}.json").stat().st_mode) == 0o600
     assert first not in session.dirty and session.active in session.dirty
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file modes are not enforced on Windows; file access is "
+                                            "governed by the user profile ACL")
+def test_save_sets_owner_only_file_permissions_on_posix(session, data_dir):
+    session.execute("NEW MERCHANT Alex Sample, alex@example.com")
+    session.execute("SAVE MERCHANT")
+    path = data_dir / f"{session.active}.json"
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
 
 
 def test_overwrite_needs_confirmation(make_session, data_dir):

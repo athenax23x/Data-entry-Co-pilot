@@ -66,7 +66,7 @@ Card numbers, card security codes, full Social Security numbers, passwords and o
 - **Default folder:** `./merchant_data/` (relative to where you start the app), or `--data-dir`.
   - Records: `merchant_data/<merchant_id>.json` — one record per file, exactly the `schema.json` structure.
   - Exports: `merchant_data/exports/merchants_<YYYYMMDD-HHMMSS>.csv`.
-- Files are written with owner-only permissions (`0600`; folders `0700`) through a temp file and an atomic rename, then read back. If any step fails, the command says `NOT saved` / `NOT exported`; it never reports success otherwise.
+- Files are written with owner-only permissions (`0600`; folders `0700`) through a temp file and an atomic rename, then read back. If any step fails, the command says `NOT saved` / `NOT exported`; it never reports success otherwise. On Windows the Unix mode `0600` is not enforced, so access to saved files follows the permissions (ACL) of your Windows user profile instead.
 - Overwriting an existing record file asks first.
 - Everything is local. Nothing is sent anywhere by this app. (If you also use an AI model for Quick Parser or Notebook prompts, that model may receive what you paste.)
 - **`.gitignore`** keeps merchant data out of git: `data/`, `merchants/`, `merchant_data/`, `*.merchants.json` and `*.csv`. `schema.json` and `instructions.md` are not ignored. The rules also catch same-named folders deeper in the tree (for example `src/data/`). **One exception:** CSV files directly in `tests/fixtures/` are not ignored (`!tests/fixtures/*.csv`), so fake sample exports can be committed; CSVs anywhere else, in sub-folders of `tests/fixtures/`, and every `*.merchants.json` and `data/` folder stay ignored. If you point `--data-dir` somewhere inside the repo that is not covered by these rules, add it to `.gitignore` first.
@@ -106,7 +106,7 @@ Rules: empty values in the required original columns (everything except `EIN / N
 pytest
 ```
 
-190 tests, no network. They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
+191 tests, no network (one of them, the Unix file-permission check, is skipped on Windows). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
 
 ## Layout
 
