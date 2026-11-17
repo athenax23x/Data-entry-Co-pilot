@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "merchant_id": "MCN-20261117-001",
+  "record_status": "Needs Review",
+  "business_entity_type": {
+    "value": "sole_proprietorship",
+    "status": "inferred",
+    "source_context": "sole proprietor",
+    "source_document": "SRC-001",
+    "updated_at": "2026-11-17T14:31:00Z"
+  },
+  "personal_information": {
+    "owners": [
+      {
+        "owner_id": "OWN-1",
+        "is_primary_owner": true,
+        "first_name": {
+          "value": "Alex",
+          "status": "inferred",
+          "source_context": "name: Alex Sample",
+          "source_document": "SRC-001",
+          "updated_at": "2026-11-17T14:31:00Z"
+        },
+        "last_name": {
+          "value": "Sample",
+          "status": "inferred",
+          "source_context": "name: Alex Sample",
+          "source_document": "SRC-001",
+          "updated_at": "2026-11-17T14:31:00Z"
+        },
+        "date_of_birth": {
+          "value": "01/15/1980",
+          "status": "inferred",
+          "source_context": "dob: 01/15/1980",
+          "source_document": "SRC-001",
+          "updated_at": "2026-11-17T14:31:00Z"
+        },
+        "ssn_last4": {
+          "value": "6789",
+          "status": "inferred",
+          "source_context": "ssn last 4: 6789",
+          "source_document": "SRC-001",
+          "updated_at": "2026-11-17T14:31:00Z"
+        },
+        "title": {
+          "value": null,
+          "status": "missing",
+          "source_context": null,
+          "source_document": null
+        },
+        "ownership_percentage": {
+          "value": 100,
+          "status": "inferred",
+          "source_context": "ownership: 100%",
+          "source_document": "SRC-001",
+          "updated_at": "2026-11-17T14:31:00Z"
+        }
+      }
+    ]
+  },
+  "business_information": {
+    "legal_business_name": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "dba_name": {
+      "value": "Sample Mobile Detailing",
+      "status": "inferred",
+      "source_context": "dba Sample Mobile Detailing",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    },
+    "business_description": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "refund_policy": {
+      "value": "30 days, full refund if unused",
+      "status": "inferred",
+      "source_context": "refund policy: 30 days, full refund if unused",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    },
+    "business_start_date": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "state_of_formation": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "website": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    }
+  },
+  "business_address": {
+    "street_address": {
+      "value": "88 Pine Rd",
+      "status": "inferred",
+      "source_context": "88 Pine Rd Tampa FL 33602",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    },
+    "city": {
+      "value": "Tampa",
+      "status": "inferred",
+      "source_context": "88 Pine Rd Tampa FL 33602",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    },
+    "state": {
+      "value": "FL",
+      "status": "inferred",
+      "source_context": "88 Pine Rd Tampa FL 33602",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    },
+    "zip": {
+      "value": "33602",
+      "status": "inferred",
+      "source_context": "88 Pine Rd Tampa FL 33602",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    }
+  },
+  "contact_information": {
+    "email": {
+      "value": "alex@example.com",
+      "status": "inferred",
+      "source_context": "alex@example.com",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    },
+    "phone": {
+      "value": "+1 (813) 555-0144",
+      "status": "conflict",
+      "source_context": "UPDATE FIELD phone = 813.555.0144",
+      "source_document": "SRC-002",
+      "updated_at": "2026-11-17T14:33:00Z",
+      "history": [
+        {
+          "value": "+1 (813) 555-0144",
+          "status": "inferred",
+          "source_context": "813 555 0144",
+          "source_document": "SRC-001",
+          "replaced_at": "2026-11-17T14:32:00Z"
+        }
+      ]
+    }
+  },
+  "ein": {
+    "value": "12-3456789",
+    "status": "inferred",
+    "source_context": "ein: 12-3456789",
+    "source_document": "SRC-001",
+    "updated_at": "2026-11-17T14:31:00Z"
+  },
+  "processing_information": {
+    "mcc": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "monthly_card_volume": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "average_ticket": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "high_ticket": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "card_present_percentage": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "keyed_percentage": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "ecommerce_percentage": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "routing_number": {
+      "value": "123456789",
+      "status": "inferred",
+      "source_context": "routing: 123456789",
+      "source_document": "SRC-001",
+      "updated_at": "2026-11-17T14:31:00Z"
+    }
+  },
+  "products_and_services": {
+    "description": {
+      "value": null,
+      "status": "missing",
+      "source_context": null,
+      "source_document": null
+    },
+    "items": [
+      {
+        "value": "car wash",
+        "status": "inferred",
+        "source_context": "products: car wash, interior detailing",
+        "source_document": "SRC-001",
+        "updated_at": "2026-11-17T14:31:00Z"
+      },
+      {
+        "value": "interior detailing",
+        "status": "inferred",
+        "source_context": "products: car wash, interior detailing",
+        "source_document": "SRC-001",
+        "updated_at": "2026-11-17T14:31:00Z"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "source_id": "SRC-001",
+      "source_type": "new_merchant",
+      "label": null,
+      "received_at": "2026-11-17T14:31:00Z"
+    },
+    {
+      "source_id": "SRC-002",
+      "source_type": "update_field",
+      "label": null,
+      "received_at": "2026-11-17T14:32:00Z"
+    },
+    {
+      "source_id": "SRC-003",
+      "source_type": "add_context",
+      "label": null,
+      "received_at": "2026-11-17T14:33:00Z"
+    }
+  ],
+  "conflicts": [
+    {
+      "conflict_id": "CNF-001",
+      "field_path": "/contact_information/phone",
+      "current_value": "+1 (813) 555-0144",
+      "current_status": "verified",
+      "candidates": [
+        {
+          "value": "+1 (813) 555-0199",
+          "source_context": "813-555-0199",
+          "source_document": "SRC-003",
+          "detected_at": "2026-11-17T14:33:00Z"
+        }
+      ],
+      "resolution": {
+        "state": "open"
+      }
+    }
+  ],
+  "created_at": "2026-11-17T14:31:00Z",
+  "updated_at": "2026-11-17T14:33:00Z"
+}

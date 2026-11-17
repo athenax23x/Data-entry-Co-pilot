@@ -58,6 +58,7 @@
         "legal_business_name",
         "dba_name",
         "business_description",
+        "refund_policy",
         "business_start_date",
         "state_of_formation",
         "website"
@@ -72,6 +73,10 @@
           "$ref": "#/$defs/stringField"
         },
         "business_description": { "$ref": "#/$defs/stringField" },
+        "refund_policy": {
+          "description": "The merchant's refund / return policy, as described by the merchant.",
+          "$ref": "#/$defs/stringField"
+        },
         "business_start_date": { "$ref": "#/$defs/dateField" },
         "state_of_formation": { "$ref": "#/$defs/stateField" },
         "website": { "$ref": "#/$defs/uriField" }
@@ -108,7 +113,6 @@
       "description": "Card processing details, captured when available. Never store full card numbers, CVV/CVC, passwords, or OTPs.",
       "type": "object",
       "required": [
-        "current_processor",
         "mcc",
         "monthly_card_volume",
         "average_ticket",
@@ -119,7 +123,6 @@
         "routing_number"
       ],
       "properties": {
-        "current_processor": { "$ref": "#/$defs/stringField" },
         "mcc": {
           "description": "4-digit Merchant Category Code.",
           "$ref": "#/$defs/mccField"
@@ -258,6 +261,18 @@
         { "properties": { "value": { "type": ["string", "null"], "format": "date" } } }
       ]
     },
+    "usDateField": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}$" } } }
+      ]
+    },
+    "last4Field": {
+      "allOf": [
+        { "$ref": "#/$defs/field" },
+        { "properties": { "value": { "type": ["string", "null"], "pattern": "^[0-9]{4}$" } } }
+      ]
+    },
     "uriField": {
       "allOf": [
         { "$ref": "#/$defs/field" },
@@ -347,7 +362,7 @@
     "owner": {
       "description": "One owner / principal. Ownership percentage is captured when available.",
       "type": "object",
-      "required": ["owner_id", "is_primary_owner", "first_name", "last_name", "title", "ownership_percentage"],
+      "required": ["owner_id", "is_primary_owner", "first_name", "last_name", "date_of_birth", "ssn_last4", "title", "ownership_percentage"],
       "properties": {
         "owner_id": {
           "description": "Identifier unique within this record, e.g. OWN-1.",
@@ -358,7 +373,15 @@
         "first_name": { "$ref": "#/$defs/stringField" },
         "last_name": { "$ref": "#/$defs/stringField" },
         "title": { "$ref": "#/$defs/stringField" },
-        "ownership_percentage": { "$ref": "#/$defs/percentageField" }
+        "ownership_percentage": { "$ref": "#/$defs/percentageField" },
+        "date_of_birth": {
+          "description": "Owner's date of birth in US format MM/DD/YYYY. The pattern checks month 01-12 and day 01-31; calendar validity (e.g. 02/30) is checked by the application.",
+          "$ref": "#/$defs/usDateField"
+        },
+        "ssn_last4": {
+          "description": "Last 4 digits of the owner's Social Security number, and nothing more. A full SSN must never be stored.",
+          "$ref": "#/$defs/last4Field"
+        }
       },
       "additionalProperties": { "$ref": "#/$defs/field" }
     },
