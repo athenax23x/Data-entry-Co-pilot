@@ -56,3 +56,13 @@ export function formatTime(iso: string, locale = "id-ID"): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
+
+export const OUTCOME_LABEL: Record<string, string> = {
+  filled: "Akan diisi",
+  review: "Akan diisi, perlu ditinjau",
+  unchanged: "Sudah sama, tidak berubah",
+  conflict: "Akan menjadi konflik",
+  ignored: "Diabaikan",
+};
+export const outcomeLabel = (o: string | null): string => (o ? (OUTCOME_LABEL[o] ?? o) : "");
+export const COPY_WARNING = "Teks ini akan dikirim ke Claude. Pastikan tidak ada data yang tidak Anda setujui.";

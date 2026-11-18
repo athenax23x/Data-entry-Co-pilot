@@ -97,3 +97,19 @@ export const addContext = (id: string, expected_version: number, text: string) =
 export const resolveConflict = (id: string, cid: string, expected_version: number, value: string) =>
   call<RecordReply>("POST", `/api/merchants/${encodeURIComponent(id)}/conflicts/${encodeURIComponent(cid)}/resolve`,
     { expected_version, value });
+
+// ---- Claude bridge (M5). The texts go to the server and back; they are never kept anywhere but component state.
+export interface BridgePrepared { masked_text: string; prompt: string; hidden: string[] }
+export interface BridgeProposal {
+  index: number; path: string; value: string | null; evidence: string; status: string;
+  ambiguous: boolean; ok: boolean; reason: string | null; outcome: string | null;
+}
+export interface BridgeApplied extends RecordReply { changed: boolean; applied: { index: number; path: string; outcome: string }[] }
+
+export const bridgePrepare = (text: string) => call<BridgePrepared>("POST", "/api/bridge/prepare", { text });
+export const bridgePreview = (id: string, expected_version: number, answer: string, source_text: string) =>
+  call<{ proposals: BridgeProposal[]; version: number }>("POST", `/api/merchants/${encodeURIComponent(id)}/bridge/preview`,
+    { expected_version, answer, source_text });
+export const bridgeApply = (id: string, expected_version: number, answer: string, source_text: string, accept: number[]) =>
+  call<BridgeApplied>("POST", `/api/merchants/${encodeURIComponent(id)}/bridge/apply`,
+    { expected_version, answer, source_text, accept });

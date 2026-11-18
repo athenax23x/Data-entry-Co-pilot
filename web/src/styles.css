@@ -71,3 +71,12 @@ th { font-size: 13px; color: var(--muted); } tr:last-child td { border-bottom: 0
 .conflict { border-top: 1px solid var(--line); padding: 8px 0; }
 .choice { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 4px 0; }
 .choice span { word-break: break-word; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 8px 14px; }
+.tabs button.on { border-bottom-color: var(--accent); font-weight: 700; }
+.banner.warn { background: var(--inferred-bg); color: var(--inferred); margin: 8px 0; }
+.bridge .panel textarea { margin-top: 6px; }
+td.wrap { white-space: normal; min-width: 180px; max-width: 340px; word-break: break-word; }
+tr.rejected td { background: var(--conflict-bg); }
+.bad { color: var(--conflict); }
+[hidden] { display: none !important; }

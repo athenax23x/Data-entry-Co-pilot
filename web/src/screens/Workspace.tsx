@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { go } from "../App";
 import * as api from "../api";
+import BridgeTab from "../components/BridgeTab";
 import ConflictPanel from "../components/ConflictPanel";
 import ContextBox from "../components/ContextBox";
 import ErrorBanner from "../components/ErrorBanner";
@@ -14,6 +15,7 @@ export default function Workspace({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"form" | "bridge">("form");
 
   const load = useCallback(async () => {
     try {
@@ -74,9 +76,18 @@ export default function Workspace({ id }: { id: string }) {
         <button type="button" onClick={() => go("#/")}>Daftar</button>
         <button type="button" onClick={() => { setError(null); setNotice(null); void load(); }}>Muat ulang</button>
       </div>
+      <div className="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={tab === "form"} className={tab === "form" ? "on" : ""} onClick={() => setTab("form")}>Formulir Paykings</button>
+        <button type="button" role="tab" aria-selected={tab === "bridge"} className={tab === "bridge" ? "on" : ""} onClick={() => setTab("bridge")}>Jembatan Claude</button>
+      </div>
       <ErrorBanner message={error} />
       {notice && <div className="banner ok" role="status">{notice}</div>}
-      <div className="layout">
+      <div hidden={tab !== "bridge"}>
+        <BridgeTab merchantId={id} version={version} onStale={() => void load()}
+                   onApply={(answer, sourceText, accept) => write((v) => api.bridgeApply(id, v, answer, sourceText, accept),
+                     (r) => ((r as api.BridgeApplied).changed ? "Usulan diterapkan." : "Tidak ada perubahan: nilainya sudah sama."))} />
+      </div>
+      <div className="layout" hidden={tab !== "form"}>
         <div className="steps">
           {STEPS.map((step) => (
             <fieldset className="step" key={step.title}>
