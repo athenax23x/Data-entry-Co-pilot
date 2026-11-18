@@ -17,5 +17,6 @@ Files:
 | `sample_record.json` | One complete record in the `schema.json` structure (with a verified value in conflict). |
 | `sample_export.csv` | The exact CSV that `EXPORT CSV` produces for that record (golden file). |
 | `sample_input.txt` | Messy one-line inputs for `NEW MERCHANT`. |
+| `sample_paykings.csv` | One fake merchant in the Paykings form layout used by `preview_tool` (SSN left empty). |
 
 `.gitignore` ignores `*.csv`, `*.merchants.json` and `data/` everywhere **except** `tests/fixtures/*.csv`. If you add a fixture, keep it fake and keep it directly in this folder.
