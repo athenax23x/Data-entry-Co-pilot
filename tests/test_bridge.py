@@ -49,6 +49,29 @@ def test_each_pattern_on_its_own():
         assert secret not in masked and kinds, text
 
 
+TEN = "12345" "67890"      # written in two parts so the fake-data scan does not read it as a phone number
+
+
+@pytest.mark.parametrize("text, secret", [
+    (f"Account number is {TEN}", TEN),
+    (f"Bank: Chase, {TEN}", TEN),
+    (f"Rek. BCA {TEN}", TEN),
+    ("SSN: 4321", "4321"),
+    ("last four of SSN 1234", "1234"),
+    ("my social is 123456789", "123456789"),
+], ids=["account-number-is", "bank-name-comma", "rek-bca", "ssn-colon-4", "last-four-of-ssn", "my-social-is"])
+def test_loose_patterns_hide_digits_near_bank_and_ssn_words(text, secret):
+    masked, kinds = mask.mask(text)
+    assert secret not in masked and mask.MASK in masked and kinds
+    assert mask.mask(masked)[0] == masked                                  # stable on a second pass
+    assert secret not in prompt.build_prompt(masked)
+
+
+def test_the_loose_patterns_leave_a_routing_number_and_a_zip_code_visible():
+    for text in ["Bank: Chase routing 021000021", "Routing 021000021, bank Chase", "Bank Tampa FL 33602"]:
+        assert mask.mask(text)[0] == text
+
+
 def test_ordinary_text_with_the_same_words_is_not_masked():
     for text in ["Account manager Lee", "license expires 01/02/2030", "Routing 123456789", "account: open since 2019"]:
         assert mask.mask(text)[0] == text

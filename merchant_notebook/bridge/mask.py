@@ -36,11 +36,21 @@ _PATTERNS = (
         re.I), 1),
 )
 
+# Looser second pass (runs after the exact patterns and after extract.redact): a long run of digits near a bank or
+# SSN word is hidden even when other words sit in between ("Bank: Chase, 123...", "my social is 123..."). This may
+# hide a harmless number now and then; that is the accepted price. A routing number is not reached: the gap may
+# not contain the word routing / ABA.
+_GAP_BANK = r"(?:(?!routing|\baba\b)[^\d\n]){0,40}?"
+_GAP_SSN = r"[^\d\n]{0,30}?"
+_LOOSE = (
+    ("bank account number", re.compile(
+        r"\b(?:acc(?:oun)?t|a/c|acct|bank|rekening|rek|no\.?\s*rek)\b" + _GAP_BANK + r"(\d(?:[ -]?\d){5,16})", re.I), 1),
+    ("SSN", re.compile(r"\b(?:ssn|social|sosial)\b" + _GAP_SSN + r"(\d(?:[ -]?\d){3,8})", re.I), 1),
+)
 
-def mask(text: str) -> tuple[str, list[str]]:
-    """Return (text safe to copy, kinds of data that were hidden). The input is not changed."""
-    found: list[str] = []
-    for label, rx, group in _PATTERNS:
+
+def _hide(text: str, patterns, found: list) -> str:
+    for label, rx, group in patterns:
         def repl(m, group=group):
             s, e = m.span(group)
             return m.group(0)[: s - m.start()] + MASK + m.group(0)[e - m.start():]
@@ -48,5 +58,13 @@ def mask(text: str) -> tuple[str, list[str]]:
         if n:
             found.append(label)
             text = new
+    return text
+
+
+def mask(text: str) -> tuple[str, list[str]]:
+    """Return (text safe to copy, kinds of data that were hidden). The input is not changed."""
+    found: list[str] = []
+    text = _hide(text, _PATTERNS, found)
     text, removed = X.redact(text)
-    return text, found + removed
+    found += removed
+    return _hide(text, _LOOSE, found), found
