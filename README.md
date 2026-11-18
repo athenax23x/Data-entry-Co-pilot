@@ -133,13 +133,32 @@ In a merchant's workspace, the tab **Jembatan Claude** lets you use Claude Pro w
 
 SSN, last 4 of SSN, driver licence, passport and account number are never sent to Claude and never filled from its answer: type them in the workspace. Endpoints: `POST /api/bridge/prepare`, `POST /api/merchants/{id}/bridge/preview`, `POST /api/merchants/{id}/bridge/apply`.
 
+## Backup and Windows scripts (M6)
+
+Double-click **`jalankan.bat`**: the first time it creates `.venv` and installs the requirements (needs Python 3.10+ and internet once); every time after that it makes a backup of an existing database and starts the app at http://127.0.0.1:8765/. The UI is already built, so Node is not needed.
+
+| File | What it does |
+|---|---|
+| `jalankan.bat` | Set up (once), back up, start the app. |
+| `backup.bat` | Make a backup now. Pass options through, e.g. `backup.bat --dest D:\Backup`. |
+| `pulihkan.bat` | List backups and restore one (close the app first). |
+| `jadwal-backup.bat` | Optional: a daily 12:30 Windows task that runs `backup.bat --quiet`. |
+
+Same thing from the command line (`python -m merchant_notebook.backup ...`): `create [--dest DIR] [--keep N]`, `list`, `verify PATH [--check-data]`, `restore PATH [--yes]`.
+
+- A backup is a folder `mcn-backup-YYYYMMDD-HHMMSS/` in `<data-dir>/backups/` (or `--dest`): `merchants.db` (a consistent SQLite snapshot; sensitive values stay AES-256-GCM tokens, so no new plain-text copy), `mcn.key` (the DPAPI-wrapped key file) and `manifest.json` (counts and a SHA-256; no names, ids or values). The newest 14 are kept; only folders this tool made are ever deleted.
+- **Only the same Windows account can open a backup.** The key is DPAPI-wrapped and DPAPI keys do not move to another account or laptop, so after a reinstall or on a new machine the sensitive values in a backup cannot be read. Keep the Windows account and `mcn.key` safe.
+- Restore checks the backup first (checksum, SQLite integrity, and that a key really decrypts every merchant), refuses while the app is running, and moves the current database aside as `merchants.db.before-restore-<time>` instead of deleting it.
+- Backups on the same disk do not protect against a lost or broken laptop: use `--dest` for a USB drive or another disk. The files are encrypted only where the database is (the sensitive fields); names and other fields are plain, so treat the folder as confidential and do not put it in a shared or cloud-synced folder you do not control.
+- The `.bat` files could not be run in the Linux environment they were written in; the Python side is covered by `tests/test_backup.py`. Try `backup.bat` and `pulihkan.bat` once on Windows with fake data.
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-347 Python tests on Linux (plus 21 Vitest tests in `web/`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
+368 Python tests on Linux (plus 21 Vitest tests in `web/`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
 
 ## Layout
 
