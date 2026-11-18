@@ -146,21 +146,42 @@ def _aad(merchant_id: str, label: str) -> bytes:
     return f"{merchant_id}|{label}".encode("utf-8")
 
 
+def _sensitive_slots(rec: dict):
+    """(label, dict, key) for every place a sensitive value is kept: the field value, its history, and the values
+    inside conflicts about it. (History and conflicts copy the value, so they must be protected the same way.)"""
+    for label, f in _sensitive_fields(rec):
+        yield label, f, "value"
+        for i, h in enumerate(f.get("history", [])):
+            yield f"{label}.history[{i}]", h, "value"
+    for c in rec.get("conflicts", []):
+        if str(c.get("field_path", "")).rsplit("/", 1)[-1] in SENSITIVE_NAMES:
+            cid = c.get("conflict_id")
+            yield f"conflict {cid}.current", c, "current_value"
+            for i, cand in enumerate(c.get("candidates", [])):
+                yield f"conflict {cid}.candidate[{i}]", cand, "value"
+            res = c.get("resolution", {})
+            yield f"conflict {cid}.resolved", res, "resolved_value"
+
+
 def _encrypt_doc(rec: dict, cipher: FieldCipher) -> dict:
     out = copy.deepcopy(rec)
     mid = out["merchant_id"]
-    for label, f in _sensitive_fields(out):
-        if f.get("value") is not None:
-            f["value"] = cipher.seal(f["value"], _aad(mid, label))
+    for label, d, key in _sensitive_slots(out):
+        if d.get(key) is not None:
+            d[key] = cipher.seal(d[key], _aad(mid, label))
     return out
 
 
 def _decrypt_doc(doc: dict, cipher: FieldCipher) -> dict:
     out = copy.deepcopy(doc)
     mid = out["merchant_id"]
-    for label, f in _sensitive_fields(out):
-        if f.get("value") is not None:
-            f["value"] = cipher.open(f["value"], _aad(mid, label))
+    for label, d, key in _sensitive_slots(out):
+        if d.get(key) is None:
+            continue
+        strict = ".history[" not in label and not label.startswith("conflict ")    # the field value itself
+        if strict or (isinstance(d[key], str) and d[key].startswith(TOKEN_PREFIX)):
+            d[key] = cipher.open(d[key], _aad(mid, label))
+        # else: a history/conflict value stored in plain text by the first M2 version; re-sealed on the next save
     return out
 
 

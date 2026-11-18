@@ -50,8 +50,9 @@ def test_the_nine_commands_are_exactly_the_ones_in_instructions():
     assert all(hasattr(Session, "cmd_" + c.lower().replace(" ", "_")) for c in COMMANDS)
 
 
-def test_app_fields_equal_schema_fields():
-    assert set(fields.FIELD_SPECS) == schema_field_paths()
+def test_app_fields_include_every_v1_schema_field():
+    # FIELD_SPECS now covers schema_v2.json (see tests/test_fields_v2.py); every v1 field must still be there.
+    assert schema_field_paths() <= set(fields.FIELD_SPECS)
 
 
 def test_instructions_fields_reference_equals_schema_fields():
