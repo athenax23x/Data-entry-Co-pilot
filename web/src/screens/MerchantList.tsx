@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { go } from "../App";
 import { listMerchants, type Summary } from "../api";
+import ExportButton from "../components/ExportButton";
 import ErrorBanner from "../components/ErrorBanner";
 import { errorMessage, formatTime, formatValue, recordStatusLabel } from "../status";
 
@@ -26,6 +27,7 @@ export default function MerchantList() {
         <input type="search" aria-label="Cari merchant" placeholder="Cari nama usaha atau ID" value={q}
                onChange={(e) => setQ(e.target.value)} />
         <button type="button" className="primary" onClick={() => go("#/baru")}>Merchant baru</button>
+        <ExportButton />
       </div>
       <ErrorBanner message={error} />
       {rows && rows.length === 0 && <p className="empty">{q.trim() ? "Tidak ada merchant yang cocok." : "Belum ada merchant. Klik “Merchant baru”."}</p>}

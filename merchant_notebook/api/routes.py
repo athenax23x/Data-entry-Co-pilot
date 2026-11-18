@@ -1,9 +1,9 @@
 """Endpoints. Thin: they call service.py (the rules) and SqliteMerchantStore (the storage)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 
-from .. import extract as X, migrate, record as R, service as S
+from .. import extract as X, migrate, paykings_export, record as R, service as S
 from ..fields import resolve_target
 from ..paykings_map import SENSITIVE_SPECS
 from ..service import CommandError
@@ -137,3 +137,14 @@ async def resolve_conflict(request: Request, merchant_id: str, conflict_id: str,
                           lambda: R.add_source(rec, "update_field", now), mask=True)
     R.touch(rec, now)
     return _saved(request, rec, version, message=message)
+
+
+@router.get("/export/paykings.csv")
+async def export_paykings(request: Request, merchant_id: str | None = None, include_sensitive: bool = False):
+    """The Paykings 70-column CSV for one merchant (or all). Sensitive columns are blank unless asked for."""
+    store = _store(request)
+    ids = [merchant_id] if merchant_id else [m["merchant_id"] for m in store.list()]
+    records = [store.load(i)[0] for i in ids]
+    name = (merchant_id or "all-merchants") + ("-with-sensitive" if include_sensitive else "") + ".csv"
+    return Response(paykings_export.render_csv(records, include_sensitive), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})

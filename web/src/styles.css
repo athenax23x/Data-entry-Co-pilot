@@ -83,3 +83,5 @@ td.wrap { white-space: normal; min-width: 180px; max-width: 340px; word-break: b
 tr.rejected td { background: var(--conflict-bg); }
 .bad { color: var(--conflict); }
 [hidden] { display: none !important; }
+
+.export { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
