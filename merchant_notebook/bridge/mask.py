@@ -27,11 +27,12 @@ _PATTERNS = (
         r"\b(?:routing|aba)\b[^\d\n]{0,25}\d{9}\s*[,/&;-]?\s*(?:and\s+)?(?:(?:acc(?:oun)?t|acct|rekening)\b)?"
         + _NUMBER_WORD + _SEP + "(" + _NUM + ")", re.I), 1),
     ("driver licence number", re.compile(
-        r"(?:\b(?:driver'?s?\s+)?licen[sc]e|\bDL|\bSIM)\b" + _NUMBER_WORD + _SEP + r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b",
+        r"(?:\b(?:driver'?s?\s+)?(?:licen[sc]e|lic)\b\.?|\bDLN?\b|\bSIM\b)" + _NUMBER_WORD + _SEP
+        + r"(?:[A-Za-z]{2}\b[\s:,-]+)?((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b",
         re.I),
      1),
     ("passport number", re.compile(
-        r"\b(?:passport|paspor)\b" + _NUMBER_WORD + _SEP + r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b", re.I), 1),
+        r"\b(?:passport|paspor|pass\.)(?!\w)" + _NUMBER_WORD + _SEP + r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b", re.I), 1),
     ("SSN last 4", re.compile(
         r"\b(?:ssn|social\s+security(?:\s+(?:number|no\.?|#))?)\b[^\d\n]{0,25}?(?:last\s*(?:4|four)|ending(?:\s+in)?)\W{0,3}(\d{4})\b",
         re.I), 1),
