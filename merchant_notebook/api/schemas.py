@@ -1,0 +1,32 @@
+"""Request bodies. Unknown keys are refused. No example values."""
+from __future__ import annotations
+
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+TEXT_MAX = 20000
+
+
+class _Body(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class NewMerchant(_Body):
+    text: Optional[str] = Field(default=None, max_length=TEXT_MAX)
+
+
+class FieldUpdate(_Body):
+    expected_version: int = Field(ge=1)
+    action: Literal["set", "confirm", "missing"] = "set"
+    value: Optional[str] = Field(default=None, max_length=TEXT_MAX)
+
+
+class AddContext(_Body):
+    expected_version: int = Field(ge=1)
+    text: str = Field(min_length=1, max_length=TEXT_MAX)
+
+
+class ResolveConflict(_Body):
+    expected_version: int = Field(ge=1)
+    value: str = Field(min_length=1, max_length=TEXT_MAX)

@@ -85,7 +85,11 @@ def get_field(rec: dict, keys) -> dict:
 def ensure_owner(rec: dict, idx: int) -> None:
     owners = rec["personal_information"]["owners"]
     if idx == len(owners):
-        owners.append(new_owner(idx + 1, False))
+        owner = new_owner(idx + 1, False)
+        for k, v in owners[0].items():                  # v2 records have more owner fields than v1
+            if k not in owner and isinstance(v, dict) and "status" in v:
+                owner[k] = empty_field()
+        owners.append(owner)
     elif idx > len(owners):
         raise RecordError(f"There are {len(owners)} owner(s); owners[{idx}] does not exist yet "
                           f"(next new owner is owners[{len(owners)}]).")

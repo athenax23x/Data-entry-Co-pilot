@@ -112,6 +112,36 @@ def last4(s: str):
     return s if re.fullmatch(r"\d{4}", s) else None
 
 
+def yes_no(s: str):
+    """The Paykings Yes/No answer. Accepts yes/no/y/n/true/false in any case."""
+    v = s.strip().lower()
+    return {"yes": "Yes", "y": "Yes", "true": "Yes", "no": "No", "n": "No", "false": "No"}.get(v)
+
+
+def expiry_date(s: str):
+    """An expiration date in US format MM/DD/YYYY (a future date is fine). Must be a real calendar date."""
+    s = s.strip()
+    for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
+        try:
+            d = datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+        return d.strftime("%m/%d/%Y") if 1900 <= d.year <= 2200 else None
+    return None
+
+
+def ssn(s: str):
+    """A full SSN as 9 digits. Dashes and spaces are accepted and removed."""
+    digits = re.sub(r"[\s-]", "", s)
+    return digits if re.fullmatch(r"\d{9}", digits) else None
+
+
+def account_number(s: str):
+    """A bank account number: 4 to 17 digits (spaces and dashes removed)."""
+    digits = re.sub(r"[\s-]", "", s)
+    return digits if re.fullmatch(r"\d{4,17}", digits) else None
+
+
 def uri(s: str):
     s = s.strip().rstrip(".,;)")
     if not s or re.search(r"\s", s):
@@ -137,5 +167,6 @@ NORMALIZERS = {
     "text": text, "phone": phone, "email": email, "state": state, "zip_code": zip_code, "ein": ein,
     "routing": routing, "mcc": mcc, "percentage": percentage, "amount": amount, "iso_date": iso_date,
     "us_date": us_date, "last4": last4,
-    "uri": uri, "entity_type": entity_type,
+    "uri": uri, "entity_type": entity_type, "yes_no": yes_no, "expiry_date": expiry_date, "ssn": ssn,
+    "account_number": account_number,
 }

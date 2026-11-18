@@ -7,6 +7,7 @@ and returns plain results. Nothing here reads or writes files.
 from __future__ import annotations
 
 from . import extract as X, record as R
+from .paykings_map import SENSITIVE_SPECS
 from .fields import FieldError, normalizer_for, resolve_target
 
 
@@ -64,14 +65,21 @@ def resolve_path(rec: dict, field_txt: str, ensure_list_slot=None):
     return keys, R.pointer(keys)
 
 
-def set_field(rec: dict, field_txt: str, value_txt: str, now: str, new_source):
+def set_field(rec: dict, field_txt: str, value_txt: str, now: str, new_source, mask: bool = False):
     """Apply UPDATE FIELD semantics: a value (verified), 'confirm', or 'missing'. Returns the message line.
 
     new_source() adds the source entry and returns its id. It is called only once the request is valid, so a
     refused request leaves no source behind. The caller does touch().
+
+    Sensitive fields (SSN, last 4, licence, passport, account number): the value is never put in the stored source
+    context or in an error message. With mask=True it is also left out of the returned message (the API uses this).
     """
     keys, label = resolve_path(rec, field_txt)
-    ctx = f"UPDATE FIELD {field_txt.strip()} = {value_txt}"[: X.CTX_MAX]
+    spec = R.spec_key(keys)
+    secret = spec in SENSITIVE_SPECS                  # SSN, last 4, licence, passport, account number
+    shown = (lambda v: "(not shown)" if v is not None else "—") if (secret and mask) else show
+    ctx = f"UPDATE FIELD {field_txt.strip()} = " + ("(not shown)" if secret else value_txt)
+    ctx = ctx[: X.CTX_MAX]
     low = value_txt.lower()
     if low == "confirm":
         if R.get_field(rec, keys)["status"] == "conflict":
@@ -79,17 +87,17 @@ def set_field(rec: dict, field_txt: str, value_txt: str, now: str, new_source):
         if R.get_field(rec, keys)["value"] is None:
             raise R.RecordError("There is no value to confirm. Give a value with UPDATE FIELD <field> = <value>.")
         old = R.user_confirm(rec, keys, ctx, new_source(), now)
-        return f"{label}: confirmed {show(old[0])} (was {old[1]}) -> verified"
+        return f"{label}: confirmed {shown(old[0])} (was {old[1]}) -> verified"
     if low == "missing":
         f = R.get_field(rec, keys)
         if f["value"] is None and f["status"] == "missing":
             raise CommandError(f"{label} is already missing.")
         old = R.user_clear(rec, keys, now)
         new_source()
-        return f"{label}: cleared (was {show(old[0])}, {old[1]}) -> missing; previous value kept in history"
-    spec = R.spec_key(keys)
+        return f"{label}: cleared (was {shown(old[0])}, {old[1]}) -> missing; previous value kept in history"
     norm = normalizer_for(spec)(value_txt)
     if norm is None:
-        raise CommandError(f"'{value_txt}' is not a valid value for {spec or label}; nothing was changed.")
+        what = "the value" if secret else f"'{value_txt}'"
+        raise CommandError(f"{what} is not a valid value for {spec or label}; nothing was changed.")
     old = R.user_set(rec, keys, norm, ctx, new_source(), now)
-    return f"{label}: {show(old[0])} ({old[1]}) -> {norm} (verified)"
+    return f"{label}: {shown(old[0])} ({old[1]}) -> {shown(norm)} (verified)"
