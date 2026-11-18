@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Merchant CSV preview</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1c2430;--muted:#5b6675;--line:#e1e5ea;--accent:#2f5d9e;
+--verified-bg:#dff5e6;--verified-fg:#14532d;--inferred-bg:#e0ecff;--inferred-fg:#1e3a8a;
+--review-bg:#fff0cc;--review-fg:#7a4b00;--conflict-bg:#fde2e2;--conflict-fg:#8a1c1c;
+--missing-bg:#eceff3;--missing-fg:#445064;--other-bg:#eceff3;--other-fg:#445064}
+@media (prefers-color-scheme:dark){:root{--bg:#14181f;--card:#1d232d;--ink:#e8ecf2;--muted:#9aa6b6;--line:#2c3542;
+--accent:#8fb4ee;--verified-bg:#143a24;--verified-fg:#a6e8bf;--inferred-bg:#172c55;--inferred-fg:#b5ceff;
+--review-bg:#4a3510;--review-fg:#ffd98a;--conflict-bg:#521c1c;--conflict-fg:#ffb4b4;
+--missing-bg:#2a3340;--missing-fg:#b6c1d1;--other-bg:#2a3340;--other-fg:#b6c1d1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.45;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+main{max-width:88rem;margin:0 auto;padding:1rem}
+h1{margin:.2rem 0;font-size:1.35rem}
+.note{color:var(--muted);font-size:.85rem;margin:.2rem 0}
+.drop{margin-top:.8rem;border:2px dashed var(--line);border-radius:.75rem;padding:1.2rem;text-align:center;background:var(--card)}
+.drop.over{border-color:var(--accent)}
+.drop button{font:inherit;padding:.5rem 1rem;border-radius:.5rem;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+.err{color:#a10000;font-weight:600;margin-top:.6rem}
+.grid{display:grid;gap:1rem;margin-top:1rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,24rem),1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:.75rem;padding:1rem;min-width:0}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;border-bottom:1px solid var(--line);padding-bottom:.6rem;margin-bottom:.4rem}
+.card-head h2{margin:0;font-size:1.1rem;overflow-wrap:anywhere}
+.mid{margin:.15rem 0 0;color:var(--muted);font-size:.78rem;overflow-wrap:anywhere}
+.group{margin:.6rem 0 0}
+.group h3{margin:0 0 .25rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+dl{margin:0}
+.row{display:grid;grid-template-columns:minmax(6.5rem,10.5rem) 1fr;gap:.5rem;padding:.2rem 0;border-bottom:1px dotted var(--line)}
+.row:last-child{border-bottom:0}
+dt{color:var(--muted);font-size:.85rem}
+dd{margin:0;overflow-wrap:anywhere;min-width:0}
+.value{white-space:pre-wrap}
+.missing-value{background:#ffe3e3;color:#a10000;border:1px dashed #d33;border-radius:.3rem;padding:0 .35rem;font-weight:700}
+@media (prefers-color-scheme:dark){.missing-value{background:#5a1d1d;color:#ffb4b4;border-color:#ff7b7b}}
+.badge{display:inline-block;margin-left:.35rem;padding:.02rem .45rem;border-radius:999px;font-size:.7rem;font-weight:600;vertical-align:middle;white-space:nowrap;background:var(--other-bg);color:var(--other-fg)}
+.b-verified{background:var(--verified-bg);color:var(--verified-fg)}
+.b-inferred{background:var(--inferred-bg);color:var(--inferred-fg)}
+.b-review{background:var(--review-bg);color:var(--review-fg)}
+.b-conflict{background:var(--conflict-bg);color:var(--conflict-fg)}
+.b-missing{background:var(--missing-bg);color:var(--missing-fg)}
+.record{margin-left:0;font-size:.78rem;padding:.15rem .6rem}
+details{margin-top:.7rem;border-top:1px solid var(--line);padding-top:.5rem}
+summary{cursor:pointer;color:var(--accent);font-size:.85rem}
+@media (max-width:480px){main{padding:.6rem}.row{grid-template-columns:1fr;gap:0}.card-head{flex-direction:column}.card{padding:.8rem}}
+</style></head>
+<body><main>
+<h1>Merchant CSV preview</h1>
+<p class="note">Choose an exported CSV. It is read and shown only inside this browser tab: nothing is uploaded, saved or sent anywhere. Close the tab when done.</p>
+<div class="drop" id="drop">
+  <p>Drop a CSV file here, or</p>
+  <button type="button" id="pick">Choose CSV file</button>
+  <input type="file" id="file" accept=".csv,text/csv" hidden>
+</div>
+<p class="err" id="err" role="alert"></p>
+<p class="note" id="summary"></p>
+<div class="grid" id="grid"></div>
+<p class="note">Contains confidential merchant data when a CSV is loaded. Do not save or share this page after loading real data.</p>
+</main>
+<script>
+"use strict";
+var MISSING = "[MISSING]";
+var STATUS_OF = {"First Name":"first_name_status","Last Name":"last_name_status","Business Name":"business_name_status",
+  "DBA Name":"dba_name_status","Business Entity Type":"business_entity_type_status","Street Address":"street_address_status",
+  "City":"city_status","State":"state_status","ZIP":"zip_status","Email":"email_status","Phone":"phone_status","EIN / Notes":"ein_status"};
+var STATUS_COLUMNS = Object.keys(STATUS_OF).map(function (k) { return STATUS_OF[k]; });
+var GROUPS = [["Identity",["First Name","Last Name","Business Name","DBA Name","Business Entity Type"]],
+  ["Address",["Street Address","City","State","ZIP"]],["Contact",["Email","Phone"]],["EIN / Notes",["EIN / Notes"]]];
+var CORE = [].concat.apply([], GROUPS.map(function (g) { return g[1]; }));
+var FIELD_BADGE = {verified:"b-verified",inferred:"b-inferred",needs_review:"b-review",missing:"b-missing",conflict:"b-conflict"};
+var RECORD_BADGE = {"Complete":"b-verified","Incomplete":"b-missing","Needs Review":"b-review"};
+var LABELS = {ssn_last4:"SSN last 4",mcc:"MCC",ein:"EIN",other_owners:"Other owners",date_of_birth:"Date of birth"};
+
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  var rows = [], row = [], field = "", q = false, i = 0, n = text.length;
+  while (i < n) {
+    var c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i += 2; continue; } q = false; i++; continue; }
+      field += c; i++; continue;
+    }
+    if (c === '"') { q = true; i++; }
+    else if (c === ",") { row.push(field); field = ""; i++; }
+    else if (c === "\r" || c === "\n") {
+      row.push(field); field = "";
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      i++;
+      if (!(row.length === 1 && row[0] === "")) rows.push(row);
+      row = [];
+    } else { field += c; i++; }
+  }
+  if (field !== "" || row.length) { row.push(field); if (!(row.length === 1 && row[0] === "")) rows.push(row); }
+  if (!rows.length) throw new Error("The file has no header row.");
+  var head = rows[0];
+  return rows.slice(1).map(function (r) {
+    var o = {};
+    head.forEach(function (h, k) { o[h] = r[k] === undefined ? "" : r[k]; });
+    return o;
+  });
+}
+
+function label(c) {
+  if (LABELS[c]) return LABELS[c];
+  if (CORE.indexOf(c) >= 0) return c;
+  var t = c.replace(/_/g, " ").trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;   // textContent only: CSV text can never become markup
+  return e;
+}
+function badge(text, map, extra) {
+  text = (text || "").trim();
+  if (!text) return null;
+  return el("span", "badge " + (Object.prototype.hasOwnProperty.call(map, text) ? map[text] : "") + (extra || ""), text);
+}
+function row(lbl, value, status) {
+  value = (value || "").trim();
+  if (!value) return null;                            // empty columns are hidden
+  var r = el("div", "row"), dd = el("dd");
+  r.appendChild(el("dt", "", lbl));
+  dd.appendChild(el("span", "value" + (value === MISSING ? " missing-value" : ""), value));
+  var b = badge(status, FIELD_BADGE);
+  if (b) dd.appendChild(b);
+  r.appendChild(dd);
+  return r;
+}
+function title(r, i) {
+  var name = [r["First Name"], r["Last Name"]].filter(function (p) { return p && p !== MISSING; }).join(" ");
+  var c = [name, r["Business Name"], r["DBA Name"], r["merchant_id"]];
+  for (var k = 0; k < c.length; k++) if (c[k] && c[k].trim() && c[k] !== MISSING) return c[k].trim();
+  return "Merchant " + i;
+}
+function card(r, i) {
+  var a = el("article", "card"), head = el("header", "card-head"), left = el("div");
+  left.appendChild(el("h2", "", title(r, i)));
+  if ((r["merchant_id"] || "").trim()) left.appendChild(el("p", "mid", r["merchant_id"].trim()));
+  head.appendChild(left);
+  var rb = badge(r["Status"], RECORD_BADGE, " record");
+  if (rb) head.appendChild(rb);
+  a.appendChild(head);
+  GROUPS.forEach(function (g) {
+    var dl = el("dl"), any = false;
+    g[1].forEach(function (c) { var x = row(label(c), r[c], r[STATUS_OF[c]]); if (x) { dl.appendChild(x); any = true; } });
+    if (any) { var s = el("section", "group"); s.appendChild(el("h3", "", g[0])); s.appendChild(dl); a.appendChild(s); }
+  });
+  var dl2 = el("dl"), any2 = false;
+  Object.keys(r).forEach(function (c) {
+    if (!c || CORE.indexOf(c) >= 0 || STATUS_COLUMNS.indexOf(c) >= 0 || c === "merchant_id" || c === "Status") return;
+    var x = row(label(c), r[c]); if (x) { dl2.appendChild(x); any2 = true; }
+  });
+  if (any2) { var d = el("details"); d.appendChild(el("summary", "", "More details")); d.appendChild(dl2); a.appendChild(d); }
+  return a;
+}
+function show(rows, name) {
+  var grid = document.getElementById("grid");
+  grid.textContent = "";
+  rows.forEach(function (r, i) { grid.appendChild(card(r, i + 1)); });
+  document.getElementById("summary").textContent = name + " \u00b7 " + rows.length + (rows.length === 1 ? " merchant" : " merchants");
+}
+function load(file) {
+  var err = document.getElementById("err");
+  err.textContent = "";
+  if (!file) return;
+  var fr = new FileReader();
+  fr.onerror = function () { err.textContent = "Could not read that file."; };
+  fr.onload = function () {
+    try { show(parseCSV(String(fr.result)), file.name); }
+    catch (e) { document.getElementById("grid").textContent = ""; err.textContent = "Error: " + e.message; }
+  };
+  fr.readAsText(file, "utf-8");
+}
+var input = document.getElementById("file"), drop = document.getElementById("drop");
+document.getElementById("pick").addEventListener("click", function () { input.click(); });
+input.addEventListener("change", function () { load(input.files[0]); });
+["dragenter", "dragover"].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("over"); }); });
+["dragleave", "drop"].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove("over"); }); });
+drop.addEventListener("drop", function (e) { load(e.dataTransfer.files[0]); });
+</script>
+</body></html>
