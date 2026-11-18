@@ -78,7 +78,9 @@ def test_host_origin_and_token_still_apply(client):
 
 def test_the_built_page_loads_nothing_from_the_internet():
     html = (STATIC / "index.html").read_text(encoding="utf-8")
-    assert not re.search(r'(?:src|href)="(?!/assets/)', html), "only local assets"
+    # the only non-asset link is the empty icon (data:,), which stops the browser asking for /favicon.ico
+    assert not re.search(r'(?:src|href)="(?!/assets/|data:,")', html), "only local assets"
+    assert 'href="data:,"' in html
     css = next((STATIC / "assets").glob("*.css")).read_text(encoding="utf-8")
     assert "http" not in css and "@import" not in css
     js = next((STATIC / "assets").glob("*.js")).read_text(encoding="utf-8")
