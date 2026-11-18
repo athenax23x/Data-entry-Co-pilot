@@ -257,3 +257,19 @@ def test_a_json_fence_is_accepted_and_bad_items_do_not_stop_the_good_ones():
 def test_a_routing_number_after_a_deleted_ssn_stays_visible():
     masked, _ = mask.mask("SSN " + "123-45-" + "6789. Card 4111 1111 1111 1111. Routing 021000021.")
     assert "Routing 021000021" in masked and "6789" not in masked
+
+
+@pytest.mark.parametrize("text, secret", [
+    ("Driver's lic. D123" + "4567", "D1234567"), ("DL: FL D123-456-78-" + "901-0", "D123-456-78-901-0"),
+    ("Lic# 12345" + "6789", "123456789"), ("DLN 12345" + "6789", "123456789"),
+    ("Pass. no. A12" + "345678", "A12345678"), ("Acct # 12345" + "67890", "12345" + "67890"),
+    ("Checking account: 12345" + "6789", "123456789"),
+])
+def test_common_us_id_and_account_formats_are_hidden(text, secret):
+    masked, kinds = mask.mask(text)
+    assert secret not in masked and mask.MASK in masked and kinds, (text, masked)
+
+
+@pytest.mark.parametrize("text", ["license plate ABC1234", "Pass the 12345 test", "He passed 2 tests"])
+def test_ordinary_words_near_the_id_words_are_not_hidden(text):
+    assert mask.mask(text) == (text, [])
