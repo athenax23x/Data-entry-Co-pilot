@@ -111,13 +111,24 @@ Listens on `127.0.0.1:8765` only (the port is fixed; nothing binds to `0.0.0.0`)
 
 Endpoints: `GET /api/health`, `GET /api/merchants?q=`, `POST /api/merchants` (`{text?}`), `GET /api/merchants/{id}`, `PATCH /api/merchants/{id}/fields/{path}` (`{expected_version, action: set|confirm|missing, value}`), `POST /api/merchants/{id}/context` (`{expected_version, text}`), `POST /api/merchants/{id}/conflicts/{cid}/resolve` (`{expected_version, value}`). Every write needs the `version` last read: 409 if the record changed. Errors: 404 not found, 409 stale, 422 invalid record or request, 400 refused change, 500 generic.
 
+## Web UI (M4)
+
+`python -m merchant_notebook.api` also serves the UI at `http://127.0.0.1:8765/`: merchant list and search, new merchant from pasted text, and a workspace with the seven Paykings steps (value, status, source, Ubah / Confirm / Kosongkan), "Tambah konteks" and the conflict panel. UI text is Indonesian; field labels are the Paykings column names. Values are shown in full (local use only). The page reads the session token from `<meta name="mcn-token">`, keeps it in memory, and never uses localStorage, the console or the URL for values. A Content-Security-Policy allows only this server: no CDN, fonts or scripts from the internet.
+
+The built UI is committed in `merchant_notebook/api/static/`, so **Node.js is needed only to rebuild it**:
+
+```bash
+cd web && npm ci && npm test && npm run build     # writes ../merchant_notebook/api/static/
+python tools/gen_layout.py                         # only after paykings_layout.json / paykings_map.py change
+```
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-294 tests on Linux, no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
+306 Python tests on Linux (plus 16 Vitest tests in `web/`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
 
 ## Layout
 

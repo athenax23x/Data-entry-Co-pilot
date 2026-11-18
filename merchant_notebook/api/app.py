@@ -4,10 +4,11 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from html import escape
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from ..fields import FieldError
 from ..record import RecordError
@@ -17,6 +18,15 @@ from ..store import StoreError
 from . import routes, security
 
 log = logging.getLogger("merchant_notebook.api")
+
+STATIC = Path(__file__).resolve().parent / "static"
+TOKEN_PLACEHOLDER = "__MCN_TOKEN__"
+# Set explicitly: Windows may map .js to text/plain from the registry, which breaks module scripts.
+ASSET_TYPES = {".js": "text/javascript", ".css": "text/css", ".map": "application/json", ".svg": "image/svg+xml",
+               ".png": "image/png", ".ico": "image/x-icon", ".woff2": "font/woff2"}
+# Everything comes from this server. Nothing can load from, or send to, any other address.
+CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
+       "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
 
 def _json(status: int, message: str) -> JSONResponse:
@@ -49,14 +59,28 @@ def create_app(store_factory, token: str | None = None, clock=None) -> FastAPI:
             log.error("request failed (%s)", type(exc).__name__)
             response = _json(500, "The record could not be processed. See the server window.")
         response.headers["Cache-Control"] = "no-store"
+        response.headers["Content-Security-Policy"] = CSP
+        response.headers["X-Content-Type-Options"] = "nosniff"
         return response
 
     @app.get("/", response_class=HTMLResponse)
     async def page(request: Request):
-        # The page the server hands out carries this run's token. The real UI (M4) will be served from here.
-        return HTMLResponse('<!doctype html><meta charset="utf-8"><title>Merchant Notebook</title>'
-                            f'<meta name="mcn-token" content="{escape(request.app.state.token)}">'
-                            "<p>Merchant Notebook API is running.</p>")
+        # The UI (built from web/, kept in api/static/). The token of this run is put into its <meta name="mcn-token">.
+        index = STATIC / "index.html"
+        if not index.is_file():
+            html = ('<!doctype html><meta charset="utf-8"><title>Merchant Notebook</title>'
+                    f'<meta name="mcn-token" content="{TOKEN_PLACEHOLDER}"><p>The UI is not built (cd web && npm run build).</p>')
+        else:
+            html = index.read_text(encoding="utf-8")
+        return HTMLResponse(html.replace(TOKEN_PLACEHOLDER, escape(request.app.state.token)))
+
+    @app.get("/assets/{name}")
+    async def asset(name: str):
+        path = STATIC / "assets" / name
+        kind = ASSET_TYPES.get(path.suffix.lower())
+        if kind is None or "/" in name or "\\" in name or not path.is_file():
+            return _json(404, "Not found.")
+        return Response(path.read_bytes(), media_type=kind)
 
     app.include_router(routes.router)
 

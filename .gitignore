@@ -19,3 +19,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+
+# Web UI sources: only the build output (merchant_notebook/api/static/) is committed
+web/node_modules/
+web/dist/
