@@ -113,3 +113,20 @@ export const bridgePreview = (id: string, expected_version: number, answer: stri
 export const bridgeApply = (id: string, expected_version: number, answer: string, source_text: string, accept: number[]) =>
   call<BridgeApplied>("POST", `/api/merchants/${encodeURIComponent(id)}/bridge/apply`,
     { expected_version, answer, source_text, accept });
+
+// ---- Paykings CSV export (M10). Needs the session token header, so it is fetched here and saved as a file in the browser.
+export async function fetchPaykingsCsv(merchantId: string | null, includeSensitive: boolean): Promise<Blob> {
+  const t = getToken();
+  if (!t) throw new ApiError(0, "Token sesi tidak ditemukan. Buka halaman ini dari server (python -m merchant_notebook.api).");
+  const params = new URLSearchParams();
+  if (merchantId) params.set("merchant_id", merchantId);
+  if (includeSensitive) params.set("include_sensitive", "true");
+  let res: Response;
+  try {
+    res = await fetch("/api/export/paykings.csv" + (params.size ? `?${params}` : ""), { headers: { "X-MCN-Token": t } });
+  } catch {
+    throw new ApiError(0, "Tidak dapat terhubung ke server.");
+  }
+  if (!res.ok) throw new ApiError(res.status, `Ekspor gagal (${res.status}).`);
+  return res.blob();
+}

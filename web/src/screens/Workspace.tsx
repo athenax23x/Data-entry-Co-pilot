@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { go } from "../App";
 import * as api from "../api";
+import ExportButton from "../components/ExportButton";
 import BridgeTab from "../components/BridgeTab";
 import ConflictPanel from "../components/ConflictPanel";
 import ContextBox from "../components/ContextBox";
@@ -75,6 +76,7 @@ export default function Workspace({ id }: { id: string }) {
         <span className="muted">Versi {version}</span>
         <button type="button" onClick={() => go("#/")}>Daftar</button>
         <button type="button" onClick={() => { setError(null); setNotice(null); void load(); }}>Muat ulang</button>
+        <ExportButton merchantId={id} />
       </div>
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "form"} className={tab === "form" ? "on" : ""} onClick={() => setTab("form")}>Formulir Paykings</button>

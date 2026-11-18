@@ -285,3 +285,41 @@ def test_a_refused_record_is_422_and_nothing_is_written(client, monkeypatch):
     assert patch(client, mid, "notes", 1, value="x").status_code == 422
     monkeypatch.undo()
     assert client.get(f"/api/merchants/{mid}").json()["version"] == 1
+
+
+# ------------------------------------------------------------------ Paykings CSV export (M10)
+def _csv_rows(text):
+    import csv, io
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def test_export_has_the_70_paykings_columns_and_hides_sensitive_values_by_default(client):
+    m = create(client)
+    mid = m["merchant_id"]
+    r = patch(client, mid, "personal_information.owners[0].ssn", 1, action="set", value="123-45-6789")
+    assert r.status_code == 200
+    res = client.get("/api/export/paykings.csv", params={"merchant_id": mid})
+    assert res.status_code == 200 and res.headers["content-type"].startswith("text/csv")
+    assert "attachment" in res.headers["content-disposition"] and res.headers["cache-control"] == "no-store"
+    rows = _csv_rows(res.text)
+    assert len(rows) == 1 and len(rows[0]) == 70 and rows[0]["merchant_id"] == mid
+    assert rows[0]["Legal Business Name"] == "Example Goods LLC" and rows[0]["Business Email"] == "owner@example.com"
+    assert "123456789" not in res.text and rows[0]["SSN"] == ""
+    assert rows[0]["Owner Title"] == "Owner"
+    assert rows[0]["Building Type"] == "" and rows[0]["MCC Code"] == ""              # skipped columns stay blank
+
+
+def test_export_includes_sensitive_values_only_when_asked_and_covers_all_merchants(client):
+    a = create(client)["merchant_id"]
+    create(client, "Second Shop LLC; 5 Oak St Tampa FL 33602")
+    patch(client, a, "personal_information.owners[0].ssn", 1, action="set", value="123-45-6789")
+    plain = _csv_rows(client.get("/api/export/paykings.csv").text)
+    assert len(plain) == 2
+    with_secret = client.get("/api/export/paykings.csv", params={"merchant_id": a, "include_sensitive": "true"})
+    assert _csv_rows(with_secret.text)[0]["SSN"] == "123456789"
+    assert "with-sensitive" in with_secret.headers["content-disposition"]
+
+
+def test_export_needs_the_token_and_refuses_an_unknown_merchant(client):
+    assert client.get("/api/export/paykings.csv", headers={TOKEN_HEADER: "wrong"}).status_code == 401
+    assert client.get("/api/export/paykings.csv", params={"merchant_id": "MCN-00000000-999"}).status_code == 404
