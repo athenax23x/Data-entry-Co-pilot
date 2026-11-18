@@ -5,8 +5,9 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import csv_export, extract as X, record as R, store
-from .fields import FIELD_SPECS, FieldError, normalizer_for, resolve_target
+from . import csv_export, extract as X, record as R, service as S, store
+from .fields import FIELD_SPECS, FieldError
+from .service import CommandError
 
 COMMANDS = ("NEW MERCHANT", "ADD CONTEXT", "UPDATE FIELD", "SHOW MERCHANT", "SHOW MISSING FIELDS",
             "SAVE MERCHANT", "LOAD MERCHANT", "EXPORT CSV", "CLEAR SESSION")
@@ -16,14 +17,6 @@ PRIVACY_NOTICE = ("Note: this assistant may run on a cloud-hosted AI model. Info
 _CMD_RX = re.compile(r"^\s*(" + "|".join(r"\s+".join(c.split()) for c in sorted(COMMANDS, key=len, reverse=True))
                      + r")\b(.*)$", re.I | re.S)
 _ID_FIRST = re.compile(r"^\s*(MCN-[0-9]{8}-[0-9]{3,})\b\s*(.*)$", re.S)
-
-
-class CommandError(Exception):
-    pass
-
-
-def _show(v) -> str:
-    return "—" if v is None else str(v)
 
 
 class Session:
@@ -80,15 +73,7 @@ class Session:
         return f"MCN-{day}-{n:03d}"
 
     def _apply(self, rec: dict, text: str, sid: str, now: str):
-        ex = X.extract(text)
-        tally = {"filled": [], "unchanged": [], "conflict": [], "review": [], "ignored": []}
-        for it in ex.items:
-            if it.list_item:
-                out = R.merge_list_item(rec, it.keys, it.value, it.context, sid, now)
-            else:
-                out = R.merge_value(rec, it.keys, it.value, it.status, it.context, sid, now, it.weak)
-            tally[out].append(R.pointer(it.keys))
-        return ex, tally
+        return S.apply_extraction(rec, text, sid, now)
 
     def _summary(self, rec, ex, tally) -> str:
         lines = []
@@ -120,15 +105,8 @@ class Session:
         rec, text = self._target(rest)
         if not text:
             raise CommandError("ADD CONTEXT needs some text.")
+        S.check_same_merchant(rec, text)
         now = self._now()
-        ex = X.extract(text)
-        cur_name = rec["business_information"]["legal_business_name"]["value"]
-        cur_ein = rec["ein"]["value"]
-        new_name = next((i.value for i in ex.items if i.keys[-1] == "legal_business_name" and i.value), None)
-        new_ein = next((i.value for i in ex.items if i.keys == ("ein",) and i.value), None)
-        if cur_name and cur_ein and new_name and new_ein and new_name != cur_name and new_ein != cur_ein:
-            raise CommandError("This looks like a different merchant (different business name and EIN). "
-                               "Nothing was merged. Use NEW MERCHANT for it.")
         sid = R.add_source(rec, "add_context", now)
         ex, tally = self._apply(rec, text, sid, now)
         R.touch(rec, now)
@@ -147,41 +125,8 @@ class Session:
         if redacted:
             raise CommandError("That value looks like sensitive data (" + ", ".join(redacted) + "). It was not "
                                "stored. (For an SSN, give only the last 4 digits: UPDATE FIELD ssn_last4 = 1234.)")
-        keys = resolve_target(field_txt)
         now = self._now()
-        if keys[0] == "custom_fields":
-            R.ensure_custom(rec, keys)
-        if keys[:2] == ("personal_information", "owners"):
-            R.ensure_owner(rec, keys[2])
-        if keys[:2] == ("products_and_services", "items"):
-            items = rec["products_and_services"]["items"]
-            idx = len(items) if keys[2] == "+" else keys[2]
-            if idx > len(items) or (idx == len(items) and keys[2] != "+"):
-                raise R.RecordError(f"There are {len(items)} item(s); item {idx} does not exist.")
-            if idx == len(items):
-                items.append(R.empty_field())
-            keys = ("products_and_services", "items", idx)
-        label = R.pointer(keys)
-        ctx = f"UPDATE FIELD {field_txt.strip()} = {value_txt}"[: X.CTX_MAX]
-        low = value_txt.lower()
-        if low == "confirm":
-            sid = R.add_source(rec, "update_field", now)
-            old = R.user_confirm(rec, keys, ctx, sid, now)
-            msg = f"{label}: confirmed {_show(old[0])} (was {old[1]}) -> verified"
-        elif low == "missing":
-            if R.get_field(rec, keys)["value"] is None and R.get_field(rec, keys)["status"] == "missing":
-                raise CommandError(f"{label} is already missing.")
-            R.add_source(rec, "update_field", now)
-            old = R.user_clear(rec, keys, now)
-            msg = f"{label}: cleared (was {_show(old[0])}, {old[1]}) -> missing; previous value kept in history"
-        else:
-            spec = R.spec_key(keys)
-            norm = normalizer_for(spec)(value_txt)
-            if norm is None:
-                raise CommandError(f"'{value_txt}' is not a valid value for {spec or label}; nothing was changed.")
-            sid = R.add_source(rec, "update_field", now)
-            old = R.user_set(rec, keys, norm, ctx, sid, now)
-            msg = f"{label}: {_show(old[0])} ({old[1]}) -> {norm} (verified)"
+        msg = S.set_field(rec, field_txt, value_txt, now, lambda: R.add_source(rec, "update_field", now))
         R.touch(rec, now)
         self.dirty.add(rec["merchant_id"])
         return f"{msg}\nRecord status: {rec['record_status']}. Not saved."
@@ -191,8 +136,8 @@ class Session:
         rows = [("path", "value", "status", "source_context", "source_document")]
 
         def add(path, f):
-            rows.append((path, _show(f["value"]), f["status"], _show(f["source_context"]),
-                         _show(f["source_document"])))
+            rows.append((path, S.show(f["value"]), f["status"], S.show(f["source_context"]),
+                         S.show(f["source_document"])))
 
         add("business_entity_type", rec["business_entity_type"])
         for i, o in enumerate(rec["personal_information"]["owners"]):
@@ -219,9 +164,9 @@ class Session:
         if open_c:
             out.append("\nOpen conflicts:")
             for c in open_c:
-                out.append(f"  {c['conflict_id']} {c['field_path']}: kept {_show(c['current_value'])} "
+                out.append(f"  {c['conflict_id']} {c['field_path']}: kept {S.show(c['current_value'])} "
                            f"({c['current_status']}); competing: "
-                           + "; ".join(f"{_show(x['value'])} [{x['source_document']}]" for x in c["candidates"]))
+                           + "; ".join(f"{S.show(x['value'])} [{x['source_document']}]" for x in c["candidates"]))
         return "\n".join(out)
 
     def cmd_show_missing_fields(self, rest: str) -> str:
