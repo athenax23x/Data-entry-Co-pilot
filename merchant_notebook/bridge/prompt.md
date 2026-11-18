@@ -1,29 +1,29 @@
-Kamu membantu mengisi data merchant dari teks mentah. Baca TEKS di bawah, lalu usulkan nilai untuk field yang BENAR-BENAR disebut di teks.
+You help fill in US merchant application data from raw text. Read the TEXT below, then propose values only for fields that are actually stated in the text.
 
-## Format jawaban
+## Answer format
 
-Jawab HANYA dengan satu objek JSON, tanpa teks lain, tanpa penjelasan:
+Answer ONLY with one JSON object, with no other text and no explanation:
 
 {"candidates": [{"path": "...", "value": "...", "evidence": "..."}]}
 
-- `path`: salah satu path dari DAFTAR FIELD di bawah, persis seperti tertulis.
-- `value`: nilai yang diusulkan, sebagai teks.
-- `evidence`: kutipan PERSIS dari TEKS (salin kata demi kata, bukan parafrase, bukan terjemahan) yang menjadi dasar nilai itu. Maksimal 200 karakter.
-- Satu usulan untuk satu field. Jika tidak ada yang bisa diusulkan, jawab `{"candidates": []}`.
+- `path`: one path from the FIELD LIST below, exactly as written.
+- `value`: the proposed value, as text.
+- `evidence`: an EXACT quote from the TEXT (copied word for word, not paraphrased, not translated) that supports the value. At most 200 characters.
+- One proposal per field. If nothing can be proposed, answer `{"candidates": []}`.
 
-## Aturan
+## Rules
 
-1. Jangan mengisi field yang tidak ada di teks. Lebih baik kosong daripada menebak.
-2. `evidence` harus muncul persis di TEKS. Usulan tanpa kutipan yang cocok akan ditolak oleh program.
-3. Untuk sole proprietorship: nama pemilik tidak boleh dijadikan nama usaha, kecuali teks menyebutnya sebagai nama usaha.
-4. Tanggal yang ambigu (misalnya 06/02/2004, bisa 6 Februari atau 2 Juni) ditulis apa adanya dan diberi `"ambiguous": true`, contoh: {"path": "...", "value": "06/02/2004", "evidence": "...", "ambiguous": true}.
-5. Teks bertanda [DISAMARKAN] berisi data yang sengaja disembunyikan. Jangan menebak isinya.
-6. Hanya gunakan path dari DAFTAR FIELD. Jangan menambah path lain. Data sensitif (nomor jaminan sosial, SIM, paspor, rekening) tidak ada di daftar dan tidak boleh muncul di jawaban.
+1. Do not fill a field that is not in the text. An empty answer is better than a guess.
+2. The `evidence` must appear exactly in the TEXT. A proposal without a matching quote is rejected by the program.
+3. For a sole proprietorship: do not use the owner's name as the business name, unless the text names it as the business name.
+4. Dates are US format (MM/DD/YYYY). An ambiguous date (for example 06/02/2004, which could be June 2 or February 6) is written as it appears and marked `"ambiguous": true`, for example: {"path": "...", "value": "06/02/2004", "evidence": "...", "ambiguous": true}.
+5. Text marked [DISAMARKAN] is data that was deliberately hidden. Do not guess what it contains.
+6. Use only paths from the FIELD LIST. Do not add other paths. Sensitive data (SSN, driver license, passport, bank account number) is not in the list and must not appear in the answer.
 
-## DAFTAR FIELD (path — format nilai)
+## FIELD LIST (path — value format)
 
 {{ALLOWED_FIELDS}}
 
-## TEKS
+## TEXT
 
 {{TEXT}}

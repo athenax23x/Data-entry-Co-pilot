@@ -107,7 +107,7 @@ def test_the_prompt_has_the_rules_and_no_sensitive_values_or_fields():
         assert secret not in p, secret
     assert '{"candidates": [{"path": "...", "value": "...", "evidence": "..."}]}' in p
     assert "{{" not in p and "Example Goods LLC" in p
-    listed = {line[2:].split(" — ")[0] for line in p.split("## DAFTAR FIELD", 1)[1].split("## TEKS")[0].splitlines()
+    listed = {line[2:].split(" — ")[0] for line in p.split("## FIELD LIST", 1)[1].split("## TEXT")[0].splitlines()
               if line.startswith("- ")}
     assert listed == set(prompt.allowed_specs())
     for spec in PM.SENSITIVE_SPECS:

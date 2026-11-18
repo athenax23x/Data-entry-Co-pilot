@@ -8,14 +8,14 @@ from .. import fields, paykings_map as PM
 
 PROMPT_FILE = Path(__file__).with_name("prompt.md")
 HINTS = {
-    "text": "teks bebas", "yes_no": "Yes atau No", "percentage": "angka 0-100", "amount": "jumlah dolar AS, mis. 25000",
-    "phone": "telepon AS 10 digit", "email": "alamat email", "state": "kode negara bagian AS 2 huruf, mis. FL",
-    "zip_code": "ZIP 5 digit (atau 5+4)", "ein": "EIN, mis. 12-3456789", "routing": "9 digit", "mcc": "4 digit",
-    "iso_date": "tanggal YYYY-MM-DD", "us_date": "tanggal MM/DD/YYYY", "expiry_date": "tanggal MM/DD/YYYY",
-    "uri": "alamat situs web",
-    "entity_type": "salah satu: " + ", ".join(v for v in ("sole_proprietorship", "llc", "corporation", "s_corporation",
-                                                         "c_corporation", "general_partnership", "limited_partnership",
-                                                         "limited_liability_partnership", "other")),
+    "text": "free text", "yes_no": "Yes or No", "percentage": "number 0-100", "amount": "US dollars, e.g. 25000",
+    "phone": "US phone, 10 digits", "email": "email address", "state": "2-letter US state code, e.g. FL",
+    "zip_code": "5-digit ZIP (or ZIP+4)", "ein": "EIN, e.g. 12-3456789", "routing": "9 digits", "mcc": "4 digits",
+    "iso_date": "date YYYY-MM-DD", "us_date": "date MM/DD/YYYY", "expiry_date": "date MM/DD/YYYY",
+    "uri": "website address",
+    "entity_type": "one of: " + ", ".join(v for v in ("sole_proprietorship", "llc", "corporation", "s_corporation",
+                                                     "c_corporation", "general_partnership", "limited_partnership",
+                                                     "limited_liability_partnership", "other")),
 }
 
 
@@ -33,7 +33,7 @@ def sensitive_paths() -> frozenset[str]:
 
 
 def allowed_fields_text() -> str:
-    return "\n".join(f"- {p} — {HINTS.get(fields.FIELD_SPECS[s], 'teks bebas')}" for p, s in allowed_specs().items())
+    return "\n".join(f"- {p} — {HINTS.get(fields.FIELD_SPECS[s], 'free text')}" for p, s in allowed_specs().items())
 
 
 def build_prompt(masked_text: str) -> str:
