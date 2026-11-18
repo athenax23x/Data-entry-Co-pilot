@@ -1,0 +1,76 @@
+[Building Type]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya muncul sebagai nama kolom di merchant_notebook/paykings_map.py,
+preview_tool/paykings_layout.json, preview_tool/viewer.html, web/src/layout.generated.ts
+(kind: "text"), schema_v2.json (`business_address.building_type`, deskripsi:
+"Paykings dropdown; the allowed option list is not mapped yet, so the value is free
+text for now."), dan header tests/fixtures/sample_paykings.csv.
+
+[Building Ownership]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom di file yang sama; schema_v2.json
+(`business_address.building_ownership`) menyatakan daftar opsi belum dipetakan.
+
+[Building Zoning]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom; schema_v2.json (`business_address.building_zoning`)
+menyatakan daftar opsi belum dipetakan.
+
+[Building Square Footage]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom; schema_v2.json (`business_address.building_square_footage`)
+menyatakan daftar opsi belum dipetakan.
+
+[Industry (MCC Category)]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom di paykings_map.py, paykings_layout.json, viewer.html,
+layout.generated.ts (kind: "text"). schema_v2.json baris 267
+(`processing_information.industry_category`) menyebut ini dropdown Paykings, tetapi:
+"the allowed option list is not mapped yet, so the value is free text for now."
+
+[How Is Inventory Stored]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom; schema_v2.json (`fulfillment_information.inventory_storage`)
+menyatakan daftar opsi belum dipetakan.
+
+[Fulfillment Time Frame]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom; schema_v2.json
+(`fulfillment_information.fulfillment_time_frame`) menyatakan daftar opsi belum dipetakan.
+
+[Delivery Time Frame]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom; schema_v2.json
+(`fulfillment_information.delivery_time_frame`) menyatakan daftar opsi belum dipetakan.
+
+[When Are Customers Charged]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom; schema_v2.json
+(`fulfillment_information.when_customers_charged`) menyatakan daftar opsi belum dipetakan.
+
+[Tax Id Type]
+Sumber: tidak ditemukan daftar pilihan
+Catatan: hanya nama kolom di paykings_map.py, paykings_layout.json, viewer.html,
+layout.generated.ts (kind: "text"). schema_v2.json baris 399-400 (`tax_id_type`)
+menyebut ini dropdown Paykings dengan daftar opsi yang belum dipetakan.
+
+RINGKASAN
+1. Field yang punya daftar pilihan lengkap: 0 dari 10.
+   Tidak ada satu pun nilai pilihan yang tercantum di repositori untuk kesepuluh field ini.
+2. Field yang tidak ditemukan daftarnya: seluruh 10 field (Building Type, Building
+   Ownership, Building Zoning, Building Square Footage, Industry (MCC Category),
+   How Is Inventory Stored, Fulfillment Time Frame, Delivery Time Frame,
+   When Are Customers Charged, Tax Id Type). Kesemuanya hanya ada sebagai nama kolom
+   tanpa daftar nilai.
+3. File yang dilewati dan alasannya:
+   - tests/fixtures/sample_paykings.csv: berisi satu baris data merchant (walau fiktif).
+     Hanya baris header yang dibaca, isi baris data tidak diambil.
+     Header kolom yang terbaca: 70 kolom, termasuk ke-10 field di atas
+     (Building Type, Building Ownership, Building Zoning, Building Square Footage,
+     How Is Inventory Stored, Fulfillment Time Frame, Delivery Time Frame,
+     When Are Customers Charged, Industry (MCC Category), Tax Id Type).
+   - tests/fixtures/sample_export.csv, tests/fixtures/sample_record.json,
+     tests/fixtures/sample_input.txt: data contoh merchant/owner; dilewati.
+   - .hoplite/: hanya log runtime shell dan folder artifacts kosong, bukan sumber dropdown.
+   - merchant_notebook/api/static/assets/index-DNwYWjDy.js: bundel hasil build; dilewati
+     sesuai instruksi mengabaikan folder build.
