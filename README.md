@@ -100,13 +100,24 @@ Rules: empty values in the required original columns (everything except `EIN / N
 
 **Sensitive fields in the CSV.** The CSV is plain text. It **does** include the primary owner's `date_of_birth` and `ssn_last4` (the last 4 digits only, by design). It can never contain a full Social Security number, because a full SSN is never stored (see above). Treat every exported CSV like the JSON records: it stays on your computer, under `merchant_data/exports/`, which is ignored by git. If you do not want these two columns in a file you share, delete them from the CSV before sharing it.
 
+## Local API (M3)
+
+```bash
+pip install -r requirements.txt
+python -m merchant_notebook.api [--data-dir merchant_data] [--no-browser]
+```
+
+Listens on `127.0.0.1:8765` only (the port is fixed; nothing binds to `0.0.0.0`). Data is `<data-dir>/merchants.db` (SQLite, sensitive values encrypted; key from Windows DPAPI, see `keys.py`). Safeguards: only `127.0.0.1:8765` / `localhost:8765` as Host (else 400); a POST/PATCH/DELETE with a foreign `Origin` gets 403; **every `/api` request needs the header `X-MCN-Token`**, a random token made at each start and embedded in the page served at `/` (`<meta name="mcn-token">`), else 401. The access log is off and error messages never echo submitted values. SSN, last 4, licence, passport and account numbers are shown in full by the API (local use only) and never written to logs or error messages.
+
+Endpoints: `GET /api/health`, `GET /api/merchants?q=`, `POST /api/merchants` (`{text?}`), `GET /api/merchants/{id}`, `PATCH /api/merchants/{id}/fields/{path}` (`{expected_version, action: set|confirm|missing, value}`), `POST /api/merchants/{id}/context` (`{expected_version, text}`), `POST /api/merchants/{id}/conflicts/{cid}/resolve` (`{expected_version, value}`). Every write needs the `version` last read: 409 if the record changed. Errors: 404 not found, 409 stale, 422 invalid record or request, 400 refused change, 500 generic.
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-191 tests, no network (one of them, the Unix file-permission check, is skipped on Windows). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
+294 tests on Linux, no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
 
 ## Layout
 
