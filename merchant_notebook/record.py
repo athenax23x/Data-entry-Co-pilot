@@ -19,11 +19,17 @@ def empty_field() -> dict:
     return {"value": None, "status": "missing", "source_context": None, "source_document": None}
 
 
+OWNER_TITLE = "Owner"
+
+
 def new_owner(n: int, primary: bool) -> dict:
+    """Every owner starts with the title Owner (the user's decision; it can still be changed)."""
     return {
         "owner_id": f"OWN-{n}", "is_primary_owner": primary,
         "first_name": empty_field(), "last_name": empty_field(), "date_of_birth": empty_field(),
-        "ssn_last4": empty_field(), "title": empty_field(), "ownership_percentage": empty_field(),
+        "ssn_last4": empty_field(),
+        "title": {"value": OWNER_TITLE, "status": "inferred", "source_context": "Otomatis: semua pemilik berjudul Owner",
+                  "source_document": None}, "ownership_percentage": empty_field(),
     }
 
 

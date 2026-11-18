@@ -108,83 +108,6 @@ export const STEPS: StepDef[] = [
         "path": "business_information.dba_name",
         "kind": "text",
         "sensitive": false
-      },
-      {
-        "label": "Building Type",
-        "path": "business_address.building_type",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Building Ownership",
-        "path": "business_address.building_ownership",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Building Zoning",
-        "path": "business_address.building_zoning",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Building Square Footage",
-        "path": "business_address.building_square_footage",
-        "kind": "text",
-        "sensitive": false
-      }
-    ]
-  },
-  {
-    "title": "3. Informasi Pemenuhan Pesanan",
-    "fields": [
-      {
-        "label": "Service Only Business",
-        "path": "fulfillment_information.service_only_business",
-        "kind": "yesno",
-        "sensitive": false
-      },
-      {
-        "label": "How Is Inventory Stored",
-        "path": "fulfillment_information.inventory_storage",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Uses 3rd Party Fulfillment Center",
-        "path": "fulfillment_information.uses_third_party_fulfillment",
-        "kind": "yesno",
-        "sensitive": false
-      },
-      {
-        "label": "Fulfillment Time Frame",
-        "path": "fulfillment_information.fulfillment_time_frame",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Delivery Time Frame",
-        "path": "fulfillment_information.delivery_time_frame",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Accepts Recurring Payments",
-        "path": "fulfillment_information.accepts_recurring_payments",
-        "kind": "yesno",
-        "sensitive": false
-      },
-      {
-        "label": "When Are Customers Charged",
-        "path": "fulfillment_information.when_customers_charged",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Refund Policy",
-        "path": "business_information.refund_policy",
-        "kind": "text",
-        "sensitive": false
       }
     ]
   },
@@ -294,18 +217,6 @@ export const STEPS: StepDef[] = [
       {
         "label": "Business Type",
         "path": "business_entity_type",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "Industry (MCC Category)",
-        "path": "processing_information.industry_category",
-        "kind": "text",
-        "sensitive": false
-      },
-      {
-        "label": "MCC Code",
-        "path": "processing_information.mcc",
         "kind": "text",
         "sensitive": false
       },

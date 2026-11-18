@@ -22,6 +22,9 @@ def test_every_spec_exists_in_a_blank_v2_record_and_resolves_to_it():
             continue
         keys = fields.resolve_target(spec)
         assert keys == fields.spec_keys(spec)
+        if spec == PM.OWNER + "title":                        # every owner starts as Owner
+            assert R.get_field(rec, keys)["value"] == "Owner", spec
+            continue
         assert R.get_field(rec, keys)["status"] == "missing", spec
 
 
@@ -78,3 +81,21 @@ def test_status_uses_paths_that_exist_in_v2():
     assert R.compute_record_status(rec) == "Complete"
     R.needed_fields(rec)[0][1]["status"] = "conflict"
     assert R.compute_record_status(rec) == "Needs Review"
+
+
+# ---------------------------------------------------------------- user decisions (M7)
+def test_skipped_columns_stay_in_the_csv_layout_but_are_not_collected():
+    from merchant_notebook.bridge import prompt
+    assert PM.SKIPPED_COLUMNS <= set(PM.COLUMN_TO_SPEC)                     # still blank CSV columns
+    assert not (set(prompt.allowed_specs().values()) & PM.SKIPPED_SPECS)    # Claude is not asked for them
+    assert PM.SKIPPED_SPECS and "fulfillment_information.inventory_storage" in PM.SKIPPED_SPECS
+
+
+def test_tax_id_type_accepts_only_ein_or_ssn():
+    norm = fields.normalizer_for("tax_id_type")
+    assert norm("ein") == "EIN" and norm(" SSN ") == "SSN" and norm("TIN") is None
+
+
+def test_every_new_owner_is_titled_owner():
+    rec = blank_v2()
+    assert rec["personal_information"]["owners"][0]["title"]["value"] == "Owner"

@@ -113,11 +113,11 @@ def test_the_prompt_has_the_rules_and_no_sensitive_values_or_fields():
     for spec in PM.SENSITIVE_SPECS:
         assert prompt.path_of(spec) not in listed
     assert "personal_information.owners[0].ssn" not in p and "account_number" not in p
-    assert "business_information.legal_business_name" in listed and "fulfillment_information.service_only_business" in listed
+    assert "business_information.legal_business_name" in listed and "fulfillment_information.service_only_business" not in listed
 
 
-def test_the_allowed_list_is_the_paykings_map_minus_the_sensitive_fields():
-    assert set(prompt.allowed_specs().values()) == {s for s in PM.COLUMN_TO_SPEC.values() if s} - PM.SENSITIVE_SPECS
+def test_the_allowed_list_is_the_paykings_map_minus_the_sensitive_and_skipped_fields():
+    assert set(prompt.allowed_specs().values()) == {s for s in PM.COLUMN_TO_SPEC.values() if s} - PM.SENSITIVE_SPECS - PM.SKIPPED_SPECS
 
 
 def test_text_that_looks_like_a_template_marker_cannot_change_the_prompt():
@@ -202,11 +202,11 @@ def test_the_same_value_as_a_verified_one_changes_nothing():
 def test_applying_twice_makes_no_duplicates():
     rec = blank()
     ps = run([cand("contact_information.phone", "555-010-0187", "Phone 555-010-0187"),
-              cand("fulfillment_information.service_only_business", "yes", "Service only: yes")], rec)
+              cand("business_information.business_description", "Service only", "Service only: yes")], rec)
     assert check.apply_proposals(rec, ps, [0, 1], NOW)["changed"] is True
     snapshot = json.dumps(rec, sort_keys=True)
     ps2 = run([cand("contact_information.phone", "555-010-0187", "Phone 555-010-0187"),
-               cand("fulfillment_information.service_only_business", "yes", "Service only: yes")], rec)
+               cand("business_information.business_description", "Service only", "Service only: yes")], rec)
     assert check.apply_proposals(rec, ps2, [0, 1], NOW)["changed"] is False
     assert json.dumps(rec, sort_keys=True) == snapshot and len(rec["sources"]) == 1
     phone = rec["contact_information"]["phone"]

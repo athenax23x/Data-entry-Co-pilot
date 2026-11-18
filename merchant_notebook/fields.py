@@ -16,7 +16,7 @@ _TYPE_NORMALIZER = {
     "uriField": "uri", "emailField": "email", "phoneField": "phone", "stateField": "state", "zipField": "zip_code",
     "einField": "ein", "routingNumberField": "routing", "mccField": "mcc", "amountField": "amount",
     "percentageField": "percentage", "entityTypeField": "entity_type", "yesNoField": "yes_no",
-    "accountNumberField": "account_number", "ssnField": "ssn",
+    "accountNumberField": "account_number", "ssnField": "ssn", "taxIdTypeField": "tax_id_type",
 }
 # Owner dates that are expiration dates (the future is allowed, unlike a date of birth).
 _EXPIRY_SPECS = frozenset(OWNER_PREFIX + n for n in ("driver_license_expiration", "passport_expiration"))
