@@ -108,6 +108,8 @@ Rules: empty values in the required original columns (everything except `EIN / N
 - **Paykings CSV:** the buttons "Unduh CSV Paykings" (workspace: one merchant; list: all) call `GET /api/export/paykings.csv[?merchant_id=...&include_sensitive=true]`. The columns and their order are those of `preview_tool/paykings_layout.json`. A CSV file on disk is not encrypted, so SSN, last 4, licence, passport and account number are **blank unless the "Sertakan data sensitif" box is ticked**. A cell that starts like a spreadsheet formula (`=`, `@`, or `+`/`-` followed by a letter) gets a leading apostrophe. The older flat export above is unchanged.
 - The prompt sent to Claude is in English with a US context (US dates, phone, ZIP, state). Masking covers US formats such as `Acct #`, `DL: FL ...`, `Lic#`, `Pass. no.`; a routing number is public and stays visible.
 
+- **Real-browser check (optional, developer):** `python tools/browser_smoke.py` starts the real server with a throwaway database and drives Chrome through the whole flow (click-to-copy, CSV download, Claude bridge, masking). Needs `pip install playwright` and Chrome; it is not part of `pytest`.
+
 ## Local API (M3)
 
 ```bash
