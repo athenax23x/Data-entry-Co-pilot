@@ -1,0 +1,44 @@
+{
+  "name": "paykings",
+  "detect_column": "Legal Business Name",
+  "id_column": "merchant_id",
+  "status_column": "Status",
+  "title_columns": ["Legal Business Name", "DBA Name"],
+  "owner_name_columns": ["Owner First Name", "Owner Last Name"],
+  "steps": [
+    {"title": "1. Business Information", "columns": [
+      "Legal Business Name", "Business Start Date", "Business Description", "Business Advertising",
+      "Business Phone", "Business Email", "Customer Service Phone", "Customer Service Email", "Website"]},
+    {"title": "2. Address Information", "columns": [
+      "Business Address", "Business Suite/Apt/Unit", "Business City", "Business State", "Business ZIP",
+      "DBA Different From Legal Info", "DBA Name",
+      "Building Type", "Building Ownership", "Building Zoning", "Building Square Footage"]},
+    {"title": "3. Fulfillment Information", "columns": [
+      "Service Only Business", "How Is Inventory Stored", "Uses 3rd Party Fulfillment Center",
+      "Fulfillment Time Frame", "Delivery Time Frame", "Accepts Recurring Payments",
+      "When Are Customers Charged", "Refund Policy"]},
+    {"title": "4. Sales Metrics", "columns": [
+      "Public Sales %", "B2B Sales %", "National Sales %", "International Sales %",
+      "Card Swipe %", "Card Keyed %", "Card Internet %",
+      "Monthly Processing Volume", "Average Transaction Amount", "Maximum Transaction Amount",
+      "Currently Accepts Credit Cards", "Previously Terminated From Processing"]},
+    {"title": "5. Banking Information", "columns": [
+      "Bank Name", "Bank Account Number", "Routing Number"]},
+    {"title": "6. Business MCC and Tax Info", "columns": [
+      "Business Type", "Industry (MCC Category)", "MCC Code", "Tax Id Type", "Federal Tax ID (EIN)"]},
+    {"title": "7. Business Owner 1", "columns": [
+      "Owner First Name", "Owner Last Name", "Owner Title", "Ownership %", "Owner Email", "Owner Phone",
+      "Owner Street Address", "Owner Suite/Apt/Unit", "Owner City", "Owner Country", "Owner State", "Owner ZIP",
+      "SSN", "Date of Birth", "Driver License Number", "Driver License Expiration", "Driver License State",
+      "Passport Number", "Passport Expiration"]},
+    {"title": "Notes", "columns": ["Notes"]}
+  ],
+  "date_columns": ["Business Start Date", "Date of Birth", "Driver License Expiration", "Passport Expiration"],
+  "sensitive_columns": ["SSN", "Bank Account Number"],
+  "sum_checks": [
+    {"step": "4. Sales Metrics", "label": "Public + B2B", "columns": ["Public Sales %", "B2B Sales %"]},
+    {"step": "4. Sales Metrics", "label": "National + International", "columns": ["National Sales %", "International Sales %"]},
+    {"step": "4. Sales Metrics", "label": "Swipe + Keyed + Internet", "columns": ["Card Swipe %", "Card Keyed %", "Card Internet %"]}
+  ],
+  "website_rule": {"step": "1. Business Information", "if_positive": "Card Internet %", "requires": "Website"}
+}
