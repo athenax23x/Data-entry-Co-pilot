@@ -100,6 +100,14 @@ Rules: empty values in the required original columns (everything except `EIN / N
 
 **Sensitive fields in the CSV.** The CSV is plain text. It **does** include the primary owner's `date_of_birth` and `ssn_last4` (the last 4 digits only, by design). It can never contain a full Social Security number, because a full SSN is never stored (see above). Treat every exported CSV like the JSON records: it stays on your computer, under `merchant_data/exports/`, which is ignored by git. If you do not want these two columns in a file you share, delete them from the CSV before sharing it.
 
+## Paykings form decisions, click-to-copy and Paykings CSV (M7, M8, M10)
+
+- **Not collected:** the four Building fields, the whole Fulfillment step, Industry (MCC Category) and MCC Code. They stay as blank CSV columns (the 70-column layout does not change), are hidden in the UI and are not asked of Claude. The list is `SKIPPED_COLUMNS` in `merchant_notebook/paykings_map.py`.
+- **Tax Id Type** accepts only `EIN` or `SSN`. Every new owner starts with the title `Owner`.
+- **Click to copy:** in the workspace, one click on a saved value copies it to the clipboard (for pasting into the Paykings form). Empty values cannot be copied.
+- **Paykings CSV:** the buttons "Unduh CSV Paykings" (workspace: one merchant; list: all) call `GET /api/export/paykings.csv[?merchant_id=...&include_sensitive=true]`. The columns and their order are those of `preview_tool/paykings_layout.json`. A CSV file on disk is not encrypted, so SSN, last 4, licence, passport and account number are **blank unless the "Sertakan data sensitif" box is ticked**. A cell that starts like a spreadsheet formula (`=`, `@`, or `+`/`-` followed by a letter) gets a leading apostrophe. The older flat export above is unchanged.
+- The prompt sent to Claude is in English with a US context (US dates, phone, ZIP, state). Masking covers US formats such as `Acct #`, `DL: FL ...`, `Lic#`, `Pass. no.`; a routing number is public and stays visible.
+
 ## Local API (M3)
 
 ```bash
@@ -158,7 +166,7 @@ Same thing from the command line (`python -m merchant_notebook.backup ...`): `cr
 pytest
 ```
 
-368 Python tests on Linux (plus 21 Vitest tests in `web/`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
+about 400 Python tests on Linux (plus 25 Vitest tests in `web/`), including one end-to-end run with US-style fake data (`tests/test_e2e_flow.py`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
 
 ## Layout
 

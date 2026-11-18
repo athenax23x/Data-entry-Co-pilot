@@ -323,3 +323,8 @@ def test_export_includes_sensitive_values_only_when_asked_and_covers_all_merchan
 def test_export_needs_the_token_and_refuses_an_unknown_merchant(client):
     assert client.get("/api/export/paykings.csv", headers={TOKEN_HEADER: "wrong"}).status_code == 401
     assert client.get("/api/export/paykings.csv", params={"merchant_id": "MCN-00000000-999"}).status_code == 404
+
+
+def test_export_refuses_an_id_that_is_not_a_merchant_id(client):
+    for bad in ('x"; filename="evil', "MCN-1", "../etc/passwd"):
+        assert client.get("/api/export/paykings.csv", params={"merchant_id": bad}).status_code == 404
