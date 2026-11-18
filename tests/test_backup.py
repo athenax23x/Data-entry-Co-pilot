@@ -11,7 +11,6 @@ from merchant_notebook.keys import KEY_BYTES, KeyProvider, KeyUnavailable
 from tests.test_sqlstore import ACCOUNT, DL, PASSPORT, SSN, v2_record
 
 T0 = datetime(2026, 11, 18, 10, 0, 0, tzinfo=timezone.utc)
-PASS = "correct horse battery"
 OTHER = b"OTHER-ACCOUNT:"                                       # marks a key file this "account" cannot open
 
 
@@ -68,7 +67,7 @@ def test_backup_has_expected_files_and_no_plain_secrets(data):
     for secret in (SSN, ACCOUNT, DL, PASSPORT):
         assert secret.encode() not in raw
     m = json.loads((b / "manifest.json").read_text())
-    assert m["merchant_count"] == 2 and m["has_recovery_key"] is False
+    assert m["merchant_count"] == 2
     text = (b / "manifest.json").read_text()
     assert "Example" not in text and "MCN-" not in text           # no names or ids in the manifest
 
@@ -172,38 +171,12 @@ def test_restore_refuses_while_the_app_runs(data, monkeypatch):
         B.restore_backup(b, data)
 
 
-def test_restore_on_a_new_account_needs_the_recovery_passphrase(data, tmp_path):
-    original = load_all(data)
-    b = B.create_backup(data, recovery_passphrase=PASS, now=T0)
-    assert (b / "recovery.key").exists()
-    new = tmp_path / "new_laptop"
-    new.mkdir()
-    (new / "mcn.key").write_bytes(OTHER + os.urandom(18))       # a key this account cannot use / does not match
-    (b / "mcn.key").write_bytes(OTHER + os.urandom(18))          # the DPAPI copy is useless on the new account
-    with pytest.raises(B.BackupError, match="--recovery"):
-        B.restore_backup(b, new, check_app=False)
-    r = B.restore_backup(b, new, recovery_passphrase=PASS, now=stamp(5), check_app=False)
-    assert r["key"] == "install_recovery"
-    assert load_all(new) == original
-    assert (new / "mcn.key.before-restore-20261118-100005").exists()
-
-
-def test_wrong_passphrase_changes_nothing(data, tmp_path):
-    b = B.create_backup(data, recovery_passphrase=PASS, now=T0)
-    new = tmp_path / "other"
-    before = (data / "merchants.db").read_bytes()
-    with pytest.raises(B.BackupError, match="Frasa pemulihan salah"):
-        B.restore_backup(b, data, recovery_passphrase="wrong passphrase!!", check_app=False)
-    assert (data / "merchants.db").read_bytes() == before and not list(data.glob("*.before-restore-*"))
-    assert not new.exists()
-
-
-def test_restore_without_any_matching_key_is_refused_and_changes_nothing(data, tmp_path):
-    b = B.create_backup(data, now=T0)                            # no recovery key
+def test_restore_on_another_account_is_refused_and_changes_nothing(data, tmp_path):
+    b = B.create_backup(data, now=T0)
     new = tmp_path / "fresh"
     new.mkdir()
     (new / "mcn.key").write_bytes(os.urandom(KEY_BYTES))         # a different key
-    (b / "mcn.key").write_bytes(OTHER + os.urandom(18))
+    (b / "mcn.key").write_bytes(OTHER + os.urandom(18))         # the DPAPI copy is useless on another account
     with pytest.raises(B.BackupError, match="Tidak ada kunci yang cocok"):
         B.restore_backup(b, new, check_app=False)
     assert not (new / "merchants.db").exists()
@@ -215,20 +188,6 @@ def test_restore_removes_a_stale_journal(data):
     B.restore_backup(b, data, now=stamp(1), check_app=False)
     assert not (data / "merchants.db-journal").exists()
     assert len(load_all(data)) == 2
-
-
-# ---------------------------------------------------------------- recovery key
-def test_recovery_key_round_trip_and_hides_the_key(tmp_path):
-    key = os.urandom(KEY_BYTES)
-    f = tmp_path / "recovery.key"
-    f.write_text(json.dumps(B.wrap_recovery(key, PASS)))
-    assert key.hex().encode() not in f.read_bytes() and key not in f.read_bytes()
-    assert B.unwrap_recovery(f, PASS) == key
-
-
-def test_short_passphrase_is_refused():
-    with pytest.raises(B.BackupError, match="minimal"):
-        B.wrap_recovery(os.urandom(KEY_BYTES), "short")
 
 
 # ---------------------------------------------------------------- command line
