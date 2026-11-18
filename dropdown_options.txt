@@ -1,0 +1,32 @@
+[Business Type / Business Entity Type]
+- sole_proprietorship (Sole Proprietorship)
+- llc (LLC)
+- corporation (Corporation, status S/C tidak disebut)
+- s_corporation (S Corporation)
+- c_corporation (C Corporation)
+- general_partnership (General Partnership)
+- limited_partnership (Limited Partnership / LP)
+- limited_liability_partnership (Limited Liability Partnership / LLP)
+- other
+- unknown
+
+[Status (status record)]
+- Complete
+- Incomplete
+- Needs Review
+
+[Status field (verifikasi per kolom)]
+- inferred
+- verified
+- missing
+- conflict
+- needs_review
+
+RINGKASAN
+1. Dropdown yang ditemukan pilihannya: Business Type / Business Entity Type; Status (record); Status per kolom.
+2. Dropdown tanpa daftar pilihan di repositori (hanya nama kolom): Building Type, Building Ownership, Building Zoning, How Is Inventory Stored, Fulfillment Time Frame, Delivery Time Frame, When Are Customers Charged, Industry (MCC Category). MCC hanya tervalidasi sebagai string 4 digit, tanpa daftar.
+3. File dilewati:
+   - tests/fixtures/sample_paykings.csv (contoh data merchant)
+   - .hoplite/ (log runtime shell platform, bukan sumber dropdown)
+   - merchant_notebook/api/static/assets/index-DNwYWjDy.js (bundel build, tidak dibuka)
+   File lain (instructions.md, schema.json, paykings_layout.json, paykings_map.py) hanya dibaca bagian definisi kolom/pilihannya.
