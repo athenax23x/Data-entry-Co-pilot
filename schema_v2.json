@@ -397,8 +397,8 @@
       }
     },
     "tax_id_type": {
-      "description": "Paykings: Tax Id Type. Paykings dropdown; the allowed option list is not mapped yet, so the value is free text for now.",
-      "$ref": "#/$defs/stringField"
+      "description": "Paykings: Tax Id Type (EIN/SSN). Only EIN or SSN.",
+      "$ref": "#/$defs/taxIdTypeField"
     },
     "notes": {
       "description": "Free-text notes (Paykings sheet: Notes), e.g. additional owners.",
@@ -1130,6 +1130,25 @@
                 "null"
               ],
               "pattern": "^[0-9]{9}$"
+            }
+          }
+        }
+      ]
+    },
+    "taxIdTypeField": {
+      "description": "Tax Id Type exactly as the Paykings dropdown: EIN or SSN.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/field"
+        },
+        {
+          "properties": {
+            "value": {
+              "enum": [
+                "EIN",
+                "SSN",
+                null
+              ]
             }
           }
         }

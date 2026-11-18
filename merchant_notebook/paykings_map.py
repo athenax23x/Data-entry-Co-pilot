@@ -91,6 +91,17 @@ COLUMN_TO_SPEC = {
 # CSV columns that are not form fields: taken from the record itself.
 RECORD_COLUMNS = {"merchant_id": "merchant_id", "Status": "record_status"}
 
+# Columns the user decided not to collect. They stay in the CSV as blank columns, but the UI does not show them
+# and Claude is not asked for them.
+SKIPPED_COLUMNS = frozenset({
+    "Building Type", "Building Ownership", "Building Zoning", "Building Square Footage",                # address step
+    "Service Only Business", "How Is Inventory Stored", "Uses 3rd Party Fulfillment Center",
+    "Fulfillment Time Frame", "Delivery Time Frame", "Accepts Recurring Payments",
+    "When Are Customers Charged", "Refund Policy",                                                      # whole fulfillment step
+    "Industry (MCC Category)", "MCC Code",
+})
+SKIPPED_SPECS = frozenset(COLUMN_TO_SPEC[c] for c in SKIPPED_COLUMNS if COLUMN_TO_SPEC.get(c))
+
 # Fields that may be stored locally but must never leave the laptop (no cloud AI, no logs).
 SENSITIVE_SPECS = frozenset({
     OWNER + "ssn", OWNER + "ssn_last4", OWNER + "driver_license_number", OWNER + "passport_number",

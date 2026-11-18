@@ -7,7 +7,7 @@ from tests.test_api import TOKEN, client, create, db_path  # noqa: F401  (fixtur
 from tests.test_bridge import ACCOUNT, DL, PASSPORT, SECRETS, SOURCE, SSN, answer, cand
 
 PHONE = cand("contact_information.phone", "555-010-0187", "Phone 555-010-0187")
-SERVICE = cand("fulfillment_information.service_only_business", "yes", "Service only: yes")
+SERVICE = cand("business_information.business_description", "Service only", "Service only: yes")
 FAKE = cand("business_information.legal_business_name", "Fake Inc", "Fake Inc is the company")
 DOB = cand("personal_information.owners[0].date_of_birth", "06/02/2004", "Born 06/02/2004")
 
@@ -47,7 +47,7 @@ def test_apply_stores_the_chosen_proposals_as_inferred_and_needs_review(client):
     phone = rec["contact_information"]["phone"]
     assert (phone["value"], phone["status"], phone["source_context"]) == ("+1 (555) 010-0187", "inferred", "Phone 555-010-0187")
     assert rec["personal_information"]["owners"][0]["date_of_birth"]["status"] == "needs_review"
-    assert rec["fulfillment_information"]["service_only_business"]["value"] == "Yes"
+    assert rec["business_information"]["business_description"]["value"] == "Service only"
     assert rec["business_information"]["legal_business_name"]["value"] is None            # not chosen
     assert SOURCE not in json.dumps(rec) and "Fake Inc" not in json.dumps(rec)             # no source text stored
 

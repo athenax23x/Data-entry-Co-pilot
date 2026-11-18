@@ -118,6 +118,12 @@ def yes_no(s: str):
     return {"yes": "Yes", "y": "Yes", "true": "Yes", "no": "No", "n": "No", "false": "No"}.get(v)
 
 
+def tax_id_type(s: str):
+    """The Paykings Tax Id Type dropdown: EIN or SSN, any case."""
+    v = s.strip().upper()
+    return v if v in ("EIN", "SSN") else None
+
+
 def expiry_date(s: str):
     """An expiration date in US format MM/DD/YYYY (a future date is fine). Must be a real calendar date."""
     s = s.strip()
@@ -167,6 +173,6 @@ NORMALIZERS = {
     "text": text, "phone": phone, "email": email, "state": state, "zip_code": zip_code, "ein": ein,
     "routing": routing, "mcc": mcc, "percentage": percentage, "amount": amount, "iso_date": iso_date,
     "us_date": us_date, "last4": last4,
-    "uri": uri, "entity_type": entity_type, "yes_no": yes_no, "expiry_date": expiry_date, "ssn": ssn,
+    "uri": uri, "entity_type": entity_type, "yes_no": yes_no, "tax_id_type": tax_id_type, "expiry_date": expiry_date, "ssn": ssn,
     "account_number": account_number,
 }
