@@ -42,7 +42,7 @@ _PATTERNS = (
 # hide a harmless number now and then; that is the accepted price. A routing number is not reached: the gap may
 # not contain the word routing / ABA.
 _GAP_BANK = r"(?:(?!routing|\baba\b)[^\d\n]){0,40}?"
-_GAP_SSN = r"[^\d\n]{0,30}?"
+_GAP_SSN = r"(?:(?!routing|\baba\b)[^\d\n]){0,30}?"      # same guard: after redact deletes an SSN, the word SSN is left
 _LOOSE = (
     ("bank account number", re.compile(
         r"\b(?:acc(?:oun)?t?|a/c|bank|rekening|rek|no\.?\s*rek)\b" + _GAP_BANK + r"(\d(?:[ -]?\d){5,16})", re.I), 1),

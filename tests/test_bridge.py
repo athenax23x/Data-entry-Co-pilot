@@ -252,3 +252,8 @@ def test_a_json_fence_is_accepted_and_bad_items_do_not_stop_the_good_ones():
     good = cand("contact_information.phone", "555-010-0187", "Phone 555-010-0187")
     ps = check.check_answer(blank(), "```json\n" + answer("junk", 5, {"path": 3}, good) + "\n```", SOURCE, NOW)
     assert [p.ok for p in ps] == [False, False, False, True]
+
+
+def test_a_routing_number_after_a_deleted_ssn_stays_visible():
+    masked, _ = mask.mask("SSN " + "123-45-" + "6789. Card 4111 1111 1111 1111. Routing 021000021.")
+    assert "Routing 021000021" in masked and "6789" not in masked
