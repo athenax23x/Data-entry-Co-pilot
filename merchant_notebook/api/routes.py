@@ -1,6 +1,8 @@
 """Endpoints. Thin: they call service.py (the rules) and SqliteMerchantStore (the storage)."""
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Request, Response
 
 from .. import extract as X, migrate, paykings_export, record as R, service as S
@@ -143,6 +145,8 @@ async def resolve_conflict(request: Request, merchant_id: str, conflict_id: str,
 async def export_paykings(request: Request, merchant_id: str | None = None, include_sensitive: bool = False):
     """The Paykings 70-column CSV for one merchant (or all). Sensitive columns are blank unless asked for."""
     store = _store(request)
+    if merchant_id and not re.fullmatch(r"MCN-[0-9]{8}-[0-9]{3,}", merchant_id):
+        raise NotFound(f"{merchant_id} is not a merchant id.")            # also keeps odd text out of the file name
     ids = [merchant_id] if merchant_id else [m["merchant_id"] for m in store.list()]
     records = [store.load(i)[0] for i in ids]
     name = (merchant_id or "all-merchants") + ("-with-sensitive" if include_sensitive else "") + ".csv"
