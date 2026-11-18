@@ -70,6 +70,16 @@ class DpapiKeyProvider(KeyProvider):
                 raise KeyUnavailable("The local key file is damaged.")
             return key
         key = os.urandom(KEY_BYTES)
+        self.install(key)
+        return key
+
+    def install(self, key: bytes) -> None:
+        """Wrap `key` with DPAPI for this Windows account and store it as the key file (atomic replace).
+        Used when a backup is restored on a new account or machine from the passphrase-protected recovery key."""
+        if sys.platform != "win32":
+            raise KeyUnavailable("DPAPI key storage needs Windows. Elsewhere, pass a key explicitly.")
+        if not isinstance(key, bytes) or len(key) != KEY_BYTES:
+            raise KeyUnavailable(f"The key must be {KEY_BYTES} bytes.")
         blob = _dpapi(ctypes.windll.crypt32.CryptProtectData, key)
         self.key_file.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.key_file.with_name(self.key_file.name + ".tmp")
@@ -79,4 +89,3 @@ class DpapiKeyProvider(KeyProvider):
             fh.flush()
             os.fsync(fh.fileno())
         os.replace(tmp, self.key_file)
-        return key

@@ -23,3 +23,6 @@ venv/
 # Web UI sources: only the build output (merchant_notebook/api/static/) is committed
 web/node_modules/
 web/dist/
+
+# Local backups (default place: merchant_data/backups/, already ignored above)
+backups/
