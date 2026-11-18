@@ -27,6 +27,24 @@ def cand(path, value, evidence, **kw):
     return {"path": path, "value": value, "evidence": evidence, **kw}
 
 
+@pytest.mark.parametrize("text, secret", [
+    ("Acc no 12345" + "67890", "12345" + "67890"), ("Acc: 12345" + "67890", "12345" + "67890"),                 # "acc" alone
+    ("Nomor SIM: 12345" + "6789012", "12345" + "6789012"), ("nomor sim 12345" + "6789012", "12345" + "6789012"),  # SIM, any case
+    ("paspor 'AB1234567'", "AB1234567"),                                                       # quote before value
+    ("Driver License: D1234567", "D1234567"), ("Driver License Number D1234567", "D1234567"),  # Paykings field name
+    ("Passport Number: X1234567", "X1234567"),
+    ("Social media ads, phone 555-010-" + "0187", "0187"),                                    # no leftover digit
+])
+def test_hardening_cases_from_review(text, secret):
+    masked, kinds = mask.mask(text)
+    assert secret not in masked and mask.MASK in masked and kinds, (text, masked)
+
+
+def test_routing_and_plain_dates_stay_visible():
+    for text in ["Routing 021000021", "Owner DOB 01/15/1980, ZIP 33602"]:
+        assert mask.mask(text) == (text, []), text
+
+
 # ------------------------------------------------------------------ A. masking
 def test_every_kind_of_sensitive_value_is_gone_from_masked_text():
     masked, kinds = mask.mask(SOURCE)

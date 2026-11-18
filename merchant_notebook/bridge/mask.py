@@ -16,7 +16,7 @@ MASK = "[DISAMARKAN]"
 
 _NUM = r"\d(?:[ -]?\d){3,16}"                                   # 4 to 17 digits, with spaces or dashes
 _NUMBER_WORD = r"(?:\s+(?:number|no\.?|num|nomor|#))?"
-_SEP = r"\s*[:=#-]?\s*"
+_SEP = r"\s*[:=#'\"-]?\s*['\"]?"
 
 # (label, compiled pattern, group to replace; 0 = the whole match)
 _PATTERNS = (
@@ -27,7 +27,8 @@ _PATTERNS = (
         r"\b(?:routing|aba)\b[^\d\n]{0,25}\d{9}\s*[,/&;-]?\s*(?:and\s+)?(?:(?:acc(?:oun)?t|acct|rekening)\b)?"
         + _NUMBER_WORD + _SEP + "(" + _NUM + ")", re.I), 1),
     ("driver licence number", re.compile(
-        r"(?:\b(?:driver'?s?\s+)?licen[sc]e|\bDL|\bSIM)\b" + _NUMBER_WORD + _SEP + r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b"),
+        r"(?:\b(?:driver'?s?\s+)?licen[sc]e|\bDL|\bSIM)\b" + _NUMBER_WORD + _SEP + r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b",
+        re.I),
      1),
     ("passport number", re.compile(
         r"\b(?:passport|paspor)\b" + _NUMBER_WORD + _SEP + r"((?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{4,19})\b", re.I), 1),
@@ -44,8 +45,8 @@ _GAP_BANK = r"(?:(?!routing|\baba\b)[^\d\n]){0,40}?"
 _GAP_SSN = r"[^\d\n]{0,30}?"
 _LOOSE = (
     ("bank account number", re.compile(
-        r"\b(?:acc(?:oun)?t|a/c|acct|bank|rekening|rek|no\.?\s*rek)\b" + _GAP_BANK + r"(\d(?:[ -]?\d){5,16})", re.I), 1),
-    ("SSN", re.compile(r"\b(?:ssn|social|sosial)\b" + _GAP_SSN + r"(\d(?:[ -]?\d){3,8})", re.I), 1),
+        r"\b(?:acc(?:oun)?t?|a/c|bank|rekening|rek|no\.?\s*rek)\b" + _GAP_BANK + r"(\d(?:[ -]?\d){5,16})", re.I), 1),
+    ("SSN", re.compile(r"\b(?:ssn|social|sosial)\b" + _GAP_SSN + r"(\d(?:[ -]?\d){3,15})", re.I), 1),
 )
 
 
