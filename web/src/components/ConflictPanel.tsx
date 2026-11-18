@@ -1,13 +1,10 @@
-import { STEPS } from "../layout.generated";
 import type { Conflict } from "../api";
 import { formatValue } from "../status";
+import { fieldLabel } from "../labels";
 import { pointerToPath } from "../recordpath";
 
-const LABELS = new Map(STEPS.flatMap((s) => s.fields.map((f) => [f.path, f.label] as const)));
-
 export function conflictLabel(c: Conflict): string {
-  const path = pointerToPath(c.field_path);
-  return LABELS.get(path) ?? path;
+  return fieldLabel(pointerToPath(c.field_path));
 }
 
 export default function ConflictPanel({ conflicts, busy, onResolve }: {

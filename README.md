@@ -122,13 +122,24 @@ cd web && npm ci && npm test && npm run build     # writes ../merchant_notebook/
 python tools/gen_layout.py                         # only after paykings_layout.json / paykings_map.py change
 ```
 
+## Claude bridge (M5): copy-paste, no API
+
+In a merchant's workspace, the tab **Jembatan Claude** lets you use Claude Pro without any API or extra cost. The app never contacts Claude: it prepares text, you paste it into the Claude chat, and you paste the JSON answer back.
+
+1. **Siapkan**: paste the source text. Cards, security codes, passwords, one-time codes, full SSNs are removed; bank account numbers, driver licence / SIM numbers, passport numbers and the last 4 of an SSN become `[DISAMARKAN]` (`merchant_notebook/bridge/mask.py`). Routing numbers are kept (public, and a field Claude may fill). The prompt (`bridge/prompt.md`) lists only the Paykings fields that are not sensitive.
+2. **Salin** the prompt into Claude, copy its JSON answer.
+3. **Periksa**: the app checks every proposal in code (`bridge/check.py`): JSON shape and size (max 50 KB), allowed path (sensitive paths refused), `evidence` must be in the source text (spaces and case ignored), the value must pass the field's normalizer and schema_v2, an existing value is never overwritten (a different one becomes a conflict), and an ambiguous date (`06/02/2004`, or `"ambiguous": true`) is stored as `needs_review`.
+4. **Terapkan** the proposals you tick. They are stored as `inferred` with the evidence quote (max 200 characters) as source; the source text itself is never stored. The server checks the answer again on apply.
+
+SSN, last 4 of SSN, driver licence, passport and account number are never sent to Claude and never filled from its answer: type them in the workspace. Endpoints: `POST /api/bridge/prepare`, `POST /api/merchants/{id}/bridge/preview`, `POST /api/merchants/{id}/bridge/apply`.
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-306 Python tests on Linux (plus 16 Vitest tests in `web/`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
+347 Python tests on Linux (plus 21 Vitest tests in `web/`), no network (a few Unix-only or Windows-only checks are skipped depending on the platform). They cover: confirmed values are never overwritten; nothing is saved unless asked; failed saves and exports are reported as failures; schema validation with real format checking (email, date, URI, date-time); the eight entity types and the sole-proprietor rules; privacy (including SSN: last 4 only); CSV flattening; the fake-data fixtures and the `.gitignore` rules around them; sync between the app, `instructions.md` and `schema.json`; and a regression test that pins the Quick Parser text and its 11 columns.
 
 ## Layout
 

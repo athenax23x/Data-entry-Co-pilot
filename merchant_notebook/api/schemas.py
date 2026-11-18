@@ -30,3 +30,22 @@ class AddContext(_Body):
 class ResolveConflict(_Body):
     expected_version: int = Field(ge=1)
     value: str = Field(min_length=1, max_length=TEXT_MAX)
+
+
+# ---- bridge (M5). Texts are never stored; only the short evidence quotes of accepted proposals are.
+BRIDGE_TEXT_MAX = 100000
+BRIDGE_ANSWER_MAX = 200000       # the real limit (50 KB) is checked by bridge/check.py with a plain message
+
+
+class BridgePrepare(_Body):
+    text: str = Field(min_length=1, max_length=BRIDGE_TEXT_MAX)
+
+
+class BridgePreview(_Body):
+    expected_version: int = Field(ge=1)
+    answer: str = Field(max_length=BRIDGE_ANSWER_MAX)
+    source_text: str = Field(min_length=1, max_length=BRIDGE_TEXT_MAX)
+
+
+class BridgeApply(BridgePreview):
+    accept: list[int] = Field(max_length=200)

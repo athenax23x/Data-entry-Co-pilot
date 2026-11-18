@@ -15,7 +15,7 @@ from ..record import RecordError
 from ..service import CommandError
 from ..sqlstore import (CorruptRecordError, NotFound, RefusedRecord, SqlStoreError, StaleRecordError)
 from ..store import StoreError
-from . import routes, security
+from . import bridge_routes, routes, security
 
 log = logging.getLogger("merchant_notebook.api")
 
@@ -83,6 +83,7 @@ def create_app(store_factory, token: str | None = None, clock=None) -> FastAPI:
         return Response(path.read_bytes(), media_type=kind)
 
     app.include_router(routes.router)
+    app.include_router(bridge_routes.router)
 
     # ---- errors: fixed, plain messages; never the submitted values
     @app.exception_handler(RequestValidationError)

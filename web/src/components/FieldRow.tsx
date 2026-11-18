@@ -17,7 +17,7 @@ interface Props {
 
 export function sourceText(field: FieldObj, sources: Source[]): string {
   const src = sources.find((s) => s.source_id === field.source_document);
-  const kind = src ? (SOURCE_LABEL[src.source_type] ?? src.source_type) : null;
+  const kind = src ? (src.label ?? SOURCE_LABEL[src.source_type] ?? src.source_type) : null;
   const parts = [kind, field.source_document, field.source_context].filter(Boolean);
   return parts.length ? parts.join(" · ") : "—";
 }
