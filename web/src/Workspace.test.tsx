@@ -74,3 +74,33 @@ describe("Workspace", () => {
     expect(await screen.findByText("The value is not a valid value for contact_information.phone; nothing was changed.")).toBeTruthy();
   });
 });
+
+describe("click to copy", () => {
+  afterEach(cleanup);
+  it("copies a field value with one click and says so", async () => {
+    const writeText = vi.fn(async () => undefined);
+    const user = userEvent.setup();                     // setup() installs its own clipboard, so ours goes after it
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const { default: FieldRow } = await import("./components/FieldRow");
+    render(<FieldRow def={{ label: "Business Phone", path: "contact_information.phone" }} sources={[]} busy={false} readOnly
+                     field={f("+1 (555) 010-0187")} onSet={() => {}} onConfirm={() => {}} onClear={() => {}} />);
+    await user.click(screen.getByRole("button", { name: "Salin Business Phone" }));
+    expect(writeText).toHaveBeenCalledWith("+1 (555) 010-0187");
+    expect(await screen.findByText("Tersalin")).toBeTruthy();
+  });
+
+  it("has nothing to copy when the value is empty, and reports a refused copy", async () => {
+    const user = userEvent.setup();
+    const { default: FieldRow } = await import("./components/FieldRow");
+    const noop = () => {};
+    const { unmount } = render(<FieldRow def={{ label: "Business Email", path: "contact_information.email" }} sources={[]}
+                                         busy={false} readOnly field={f(null, "missing")} onSet={noop} onConfirm={noop} onClear={noop} />);
+    expect(screen.queryByRole("button", { name: "Salin Business Email" })).toBeNull();
+    unmount();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn(async () => { throw new Error("denied"); }) }, configurable: true });
+    render(<FieldRow def={{ label: "Business Email", path: "contact_information.email" }} sources={[]} busy={false} readOnly
+                     field={f("a@example.com")} onSet={noop} onConfirm={noop} onClear={noop} />);
+    await user.click(screen.getByRole("button", { name: "Salin Business Email" }));
+    expect(await screen.findByText("Gagal menyalin")).toBeTruthy();
+  });
+});

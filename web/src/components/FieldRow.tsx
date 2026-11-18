@@ -25,6 +25,7 @@ export function sourceText(field: FieldObj, sources: Source[]): string {
 export default function FieldRow({ def, field, sources, busy, readOnly, onSet, onConfirm, onClear }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [copied, setCopied] = useState<"ok" | "fail" | null>(null);
 
   if (!field) {
     return <div className="field"><div className="label">{def.label}</div><div className="value muted">Tidak ada di record ini</div></div>;
@@ -37,6 +38,16 @@ export default function FieldRow({ def, field, sources, busy, readOnly, onSet, o
     setDraft(empty ? "" : String(field!.value));
     setEditing(true);
   }
+  // One click copies the value exactly as shown, to paste into the Paykings form. It stays on this laptop.
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(String(field!.value));
+      setCopied("ok");
+    } catch {
+      setCopied("fail");
+    }
+    window.setTimeout(() => setCopied(null), 1800);
+  }
   function save() {
     onSet(draft);
     setEditing(false);
@@ -46,7 +57,15 @@ export default function FieldRow({ def, field, sources, busy, readOnly, onSet, o
     <div className={`field ${def.sensitive ? "sensitive" : ""}`} data-path={def.path}>
       <div className="label">{def.label}</div>
       {!editing ? (
-        <div className={`value ${empty ? "muted" : ""}`}>{formatValue(field.value)}</div>
+        empty ? (
+          <div className="value muted">{formatValue(field.value)}</div>
+        ) : (
+          <button type="button" className="value copyable" title="Klik untuk menyalin" aria-label={`Salin ${def.label}`}
+                  onClick={() => void copy()}>
+            {formatValue(field.value)}
+            {copied && <span className={`copied ${copied}`} role="status">{copied === "ok" ? "Tersalin" : "Gagal menyalin"}</span>}
+          </button>
+        )
       ) : (
         <div className="edit">
           {def.kind === "yesno" ? (
