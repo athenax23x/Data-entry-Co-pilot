@@ -26,3 +26,6 @@ web/dist/
 
 # Local backups (default place: merchant_data/backups/, already ignored above)
 backups/
+
+# Portable password-protected exports
+*.mcnx

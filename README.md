@@ -110,6 +110,16 @@ Rules: empty values in the required original columns (everything except `EIN / N
 
 - **Real-browser check (optional, developer):** `python tools/browser_smoke.py` starts the real server with a throwaway database and drives Chrome through the whole flow (click-to-copy, CSV download, Claude bridge, masking). Needs `pip install playwright` and Chrome; it is not part of `pytest`.
 
+## Moving the data to another PC (M17)
+
+The database key is tied to one Windows account (DPAPI), so `merchants.db` and the backups open only on that account. To move merchants to another PC:
+
+1. On the old PC: `ekspor-portabel.bat D:\merchants.mcnx` (or `python -m merchant_notebook.portable export --file merchants.mcnx`). Choose a password of at least 12 characters, twice. The file is encrypted with a key made from the password (scrypt + AES-256-GCM); sensitive values are inside the encrypted payload only. **The password cannot be recovered.**
+2. Copy the `.mcnx` file (USB, for example). Do not commit it (`*.mcnx` is git-ignored).
+3. On the new PC: install the app (`jalankan.bat` once), close it, then `impor-portabel.bat D:\merchants.mcnx` and type the password. Existing merchants are skipped, never overwritten.
+
+Do not use a shared computer (an internet cafe) for real merchant data: SSN and bank numbers would be typed on a machine you do not control.
+
 ## Local API (M3)
 
 ```bash
