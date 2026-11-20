@@ -186,7 +186,12 @@ def _decrypt_doc(doc: dict, cipher: FieldCipher) -> dict:
 
 
 # ---------------------------------------------------------------- store
-WORK_STAGES = ("baru", "menunggu_info", "siap_diisi", "sudah_diisi", "disetujui", "ditolak")
+WORK_STAGES = ("baru", "menunggu_info", "siap_diisi")
+# Where the application is at Paykings (M27). Default: no_info.
+APP_STATUSES = ("no_info", "not_submitted", "submitted", "signed_waiting_underwriting", "approved", "declined")
+# Work stages from M25 that are now application statuses: old stage -> (stage, application status)
+_OLD_STAGES = {"sudah_diisi": ("siap_diisi", "submitted"), "disetujui": ("siap_diisi", "approved"),
+               "ditolak": ("siap_diisi", "declined")}
 
 
 class SqliteMerchantStore:
@@ -215,9 +220,15 @@ class SqliteMerchantStore:
             CREATE TABLE IF NOT EXISTS work_status (
                 merchant_id TEXT PRIMARY KEY REFERENCES merchants(merchant_id) ON DELETE CASCADE,
                 stage       TEXT NOT NULL,
-                updated_at  TEXT NOT NULL
+                updated_at  TEXT NOT NULL,
+                app_status  TEXT NOT NULL DEFAULT 'no_info'
             );
         """)
+        cols = {r[1] for r in self._db.execute("PRAGMA table_info(work_status)")}
+        if "app_status" not in cols:                                   # databases made by M25 (#24)
+            self._db.execute("ALTER TABLE work_status ADD COLUMN app_status TEXT NOT NULL DEFAULT 'no_info'")
+        for old, (stage, app) in _OLD_STAGES.items():
+            self._db.execute("UPDATE work_status SET stage = ?, app_status = ? WHERE stage = ?", (stage, app, old))
         self._db.execute(f"PRAGMA user_version = {SCHEMA_VERSION_DB}")
         if os.name == "posix":
             os.chmod(self.path, 0o600)
@@ -298,7 +309,7 @@ class SqliteMerchantStore:
         """Summaries only (no decryption), archived ones included (flag 'archived'). query matches the business name
         (case-insensitive) or the id."""
         cols = ("SELECT m.merchant_id, m.legal_name, m.entity_type, m.record_status, m.version, m.updated_at, "
-                "a.archived_at, w.stage FROM merchants m LEFT JOIN archived a ON a.merchant_id = m.merchant_id "
+                "a.archived_at, w.stage, w.app_status FROM merchants m LEFT JOIN archived a ON a.merchant_id = m.merchant_id "
                 "LEFT JOIN work_status w ON w.merchant_id = m.merchant_id ")
         if query:
             q = query.strip()
@@ -308,7 +319,8 @@ class SqliteMerchantStore:
         else:
             rows = self._db.execute(cols + "ORDER BY m.updated_at DESC").fetchall()
         keys = ("merchant_id", "legal_name", "entity_type", "record_status", "version", "updated_at")
-        return [dict(zip(keys, r[:6]), archived=r[6] is not None, stage=r[7] or "baru") for r in rows]
+        return [dict(zip(keys, r[:6]), archived=r[6] is not None, stage=r[7] or "baru",
+                     app_status=r[8] or "no_info") for r in rows]
 
     # -- archive and delete (M22). Archiving hides a merchant from the list; only an archived one can be deleted.
     def set_archived(self, merchant_id: str, archived: bool, now: str) -> None:
@@ -332,9 +344,23 @@ class SqliteMerchantStore:
                              "ON CONFLICT(merchant_id) DO UPDATE SET stage = excluded.stage, updated_at = excluded.updated_at",
                              (merchant_id, stage, now))
 
+    def set_app_status(self, merchant_id: str, status: str, now: str) -> None:
+        if status not in APP_STATUSES:
+            raise RefusedRecord("Unknown application status.")
+        with self._tx():
+            if not self._exists(merchant_id):
+                raise NotFound(f"{merchant_id} is not in the database.")
+            self._db.execute("INSERT INTO work_status (merchant_id, stage, updated_at, app_status) VALUES (?, 'baru', ?, ?) "
+                             "ON CONFLICT(merchant_id) DO UPDATE SET app_status = excluded.app_status, "
+                             "updated_at = excluded.updated_at", (merchant_id, now, status))
+
     def stage_of(self, merchant_id: str) -> str:
         row = self._db.execute("SELECT stage FROM work_status WHERE merchant_id = ?", (merchant_id,)).fetchone()
         return row[0] if row else "baru"
+
+    def app_status_of(self, merchant_id: str) -> str:
+        row = self._db.execute("SELECT app_status FROM work_status WHERE merchant_id = ?", (merchant_id,)).fetchone()
+        return row[0] if row else "no_info"
 
     def delete(self, merchant_id: str, expected_version: int) -> None:
         """Remove an archived merchant for good. The version must match, so a merchant changed elsewhere is kept."""

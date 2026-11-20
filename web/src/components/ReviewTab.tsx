@@ -40,6 +40,18 @@ export default function ReviewTab({ merchantId, version, onCount }: {
     window.setTimeout(() => setCopied(null), 1800);
   }
 
+  async function appStatus(s: api.AppStatus) {
+    setSaving(true);
+    try {
+      await api.setAppStatus(merchantId, s);
+      setData((d) => (d ? { ...d, app_status: s } : d));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function stage(s: api.Stage) {
     setSaving(true);
     try {
@@ -60,11 +72,20 @@ export default function ReviewTab({ merchantId, version, onCount }: {
     <div className="review">
       <ErrorBanner message={error} />
       <div className="review-col">
-        <section className="fill-card">
-          <h2>Tahap kerja</h2>
-          <select aria-label="Tahap kerja" value={data.stage} disabled={saving} onChange={(e) => void stage(e.target.value as api.Stage)}>
-            {api.STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-          </select>
+        <section className="fill-card status-pair">
+          <label>
+            <span className="muted small">Status aplikasi (Paykings)</span>
+            <select aria-label="Status aplikasi" className={`app-${data.app_status}`} value={data.app_status} disabled={saving}
+                    onChange={(e) => void appStatus(e.target.value as api.AppStatus)}>
+              {api.APP_STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="muted small">Tahap persiapan</span>
+            <select aria-label="Tahap kerja" value={data.stage} disabled={saving} onChange={(e) => void stage(e.target.value as api.Stage)}>
+              {api.STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </label>
           <p className="muted small">Hanya untuk catatan Anda; tidak ikut ke CSV.</p>
         </section>
         <section className="fill-card">

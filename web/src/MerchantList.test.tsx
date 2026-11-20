@@ -91,3 +91,25 @@ describe("Tambah info", () => {
     expect(peekBridgeText("MCN-20261120-001")).toBe("Bank: Example Bank N.A.");
   });
 });
+
+describe("Status aplikasi", () => {
+  beforeEach(() => { setTokenForTests("tok"); window.location.hash = ""; });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); setTokenForTests(null); });
+
+  it("changes in place and filters", async () => {
+    const calls: { url: string; method: string; body?: string }[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation((url, init) => {
+      const method = (init as RequestInit)?.method ?? "GET";
+      calls.push({ url: String(url), method, body: (init as RequestInit)?.body as string | undefined });
+      if (method === "POST") return json(200, {});
+      return json(200, { merchants: [row("MCN-20261120-001", "Incomplete", { app_status: "submitted" }), row("MCN-20261120-002", "Incomplete")] });
+    });
+    const u = userEvent.setup();
+    render(<MerchantList />);
+    await u.selectOptions(await screen.findByLabelText("Status aplikasi MCN-20261120-002"), "approved");
+    await waitFor(() => expect(calls.find((c) => c.method === "POST")?.body).toBe(JSON.stringify({ app_status: "approved" })));
+    await u.selectOptions(screen.getByLabelText("Filter status aplikasi"), "submitted");
+    expect(screen.queryByText("MCN-20261120-002 LLC")).toBeNull();
+    expect(screen.getByText("MCN-20261120-001 LLC")).toBeTruthy();
+  });
+});

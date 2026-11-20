@@ -31,6 +31,7 @@ export default function MerchantList() {
   const [paste, setPaste] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [stageFilter, setStageFilter] = useState<api.Stage | "all">("all");
+  const [appFilter, setAppFilter] = useState<api.AppStatus | "all">("all");
   const [addFor, setAddFor] = useState<string | null>(null);
   const [addText, setAddText] = useState("");
   const [tick, setTick] = useState(0);
@@ -91,6 +92,16 @@ export default function MerchantList() {
     setAddText("");
   }
 
+  async function changeApp(r: Summary, app_status: api.AppStatus) {
+    setRows((old) => old && old.map((x) => (x.merchant_id === r.merchant_id ? { ...x, app_status } : x)));
+    try {
+      await api.setAppStatus(r.merchant_id, app_status);
+    } catch (e) {
+      setError(errorMessage(e));
+      reload();
+    }
+  }
+
   async function changeStage(r: Summary, stage: api.Stage) {
     setRows((old) => old && old.map((x) => (x.merchant_id === r.merchant_id ? { ...x, stage } : x)));
     try {
@@ -102,7 +113,8 @@ export default function MerchantList() {
   }
 
   const shown = (rows ?? []).filter((r) => (filter === "all" || r.record_status === filter)
-    && (stageFilter === "all" || (r.stage ?? "baru") === stageFilter));
+    && (stageFilter === "all" || (r.stage ?? "baru") === stageFilter)
+    && (appFilter === "all" || (r.app_status ?? "no_info") === appFilter));
   const count = (f: Filter) => (rows ?? []).filter((r) => f === "all" || r.record_status === f).length;
 
   return (
@@ -151,6 +163,11 @@ export default function MerchantList() {
             <option value="all">Semua tahap</option>
             {api.STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
+          <select aria-label="Filter status aplikasi" className="stage-select" value={appFilter}
+                  onChange={(e) => setAppFilter(e.target.value as api.AppStatus | "all")}>
+            <option value="all">Semua status aplikasi</option>
+            {api.APP_STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label} ({(rows ?? []).filter((r) => (r.app_status ?? "no_info") === s.key).length})</option>)}
+          </select>
         </div>
       )}
 
@@ -163,15 +180,27 @@ export default function MerchantList() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>ID</th><th>Nama usaha</th><th>Status</th><th>Tahap</th><th>Terisi</th><th>Cek</th><th>Terakhir diubah</th><th>Aksi</th></tr>
+              <tr><th>ID</th><th>Nama usaha</th><th>Aplikasi</th><th>Tahap</th><th>Terisi</th><th>Cek</th><th>Aksi</th></tr>
             </thead>
             <tbody>
               {shown.map((r) => (
                 <Fragment key={r.merchant_id}>
                 <tr>
                   <td><a href={`#/m/${r.merchant_id}`}>{r.merchant_id}</a></td>
-                  <td>{formatValue(r.legal_name)}</td>
-                  <td><span className={`rec rec-${r.record_status.replace(" ", "-").toLowerCase()}`}>{recordStatusLabel(r.record_status)}</span></td>
+                  <td className="name-cell">
+                    <div>{formatValue(r.legal_name)}</div>
+                    <div className="sub">
+                      <span className={`rec rec-${r.record_status.replace(" ", "-").toLowerCase()}`}>{recordStatusLabel(r.record_status)}</span>
+                      <span className="muted small"> · {formatTime(r.updated_at)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <select aria-label={`Status aplikasi ${r.merchant_id}`} className={`stage-select app-${r.app_status ?? "no_info"}`}
+                            value={r.app_status ?? "no_info"} disabled={archived}
+                            onChange={(e) => void changeApp(r, e.target.value as api.AppStatus)}>
+                      {api.APP_STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                  </td>
                   <td>
                     <select aria-label={`Tahap ${r.merchant_id}`} className="stage-select" value={r.stage ?? "baru"} disabled={archived}
                             onChange={(e) => void changeStage(r, e.target.value as api.Stage)}>
@@ -189,7 +218,6 @@ export default function MerchantList() {
                     {r.warnings ? <span className="chk-count warn">{r.warnings} periksa</span> : null}
                     {!r.errors && !r.warnings && r.errors != null ? <span className="muted">OK</span> : null}
                   </td>
-                  <td>{formatTime(r.updated_at)}</td>
                   <td className="row-actions">
                     {!archived ? (
                       <>
@@ -219,7 +247,7 @@ export default function MerchantList() {
                 </tr>
                 {addFor === r.merchant_id && !archived && (
                   <tr className="addinfo">
-                    <td colSpan={8}>
+                    <td colSpan={7}>
                       <textarea aria-label={`Info tambahan ${r.merchant_id}`} rows={3} value={addText} autoFocus
                                 placeholder="Tempel balasan atau info baru dari merchant…" onChange={(e) => setAddText(e.target.value)} />
                       <div className="fill-actions">

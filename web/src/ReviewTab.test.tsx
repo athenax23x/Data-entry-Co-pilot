@@ -6,7 +6,7 @@ import ReviewTab from "./components/ReviewTab";
 
 const json = (status: number, body: unknown) => Promise.resolve(new Response(JSON.stringify(body), { status }));
 const review = {
-  merchant_id: "MCN-20261120-001", stage: "baru", message: "Hi Pat,\n\nBusiness address:\n- Business ZIP code",
+  merchant_id: "MCN-20261120-001", stage: "baru", app_status: "no_info", message: "Hi Pat,\n\nBusiness address:\n- Business ZIP code",
   missing: [{ section: "Business address", label: "Business ZIP", ask: "Business ZIP code" }],
   checks: [
     { level: "warn", code: "ownership_low", message: "Ownership % pemilik di bawah 25%.", fields: ["Ownership %"] },
@@ -38,5 +38,8 @@ describe("Periksa", () => {
     await u.click(screen.getByRole("button", { name: /Menunggu info merchant/ }));
     await waitFor(() => expect(calls.find((c) => c.method === "POST")?.body).toBe(JSON.stringify({ stage: "menunggu_info" })));
     expect((screen.getByLabelText("Tahap kerja") as HTMLSelectElement).value).toBe("menunggu_info");
+    await u.selectOptions(screen.getByLabelText("Status aplikasi"), "signed_waiting_underwriting");
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/application-status")
+      && c.body === JSON.stringify({ app_status: "signed_waiting_underwriting" }))).toBe(true));
   });
 });

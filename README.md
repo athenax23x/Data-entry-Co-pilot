@@ -122,8 +122,10 @@ Rules: empty values in the required original columns (everything except `EIN / N
 - **Tab “Cek & minta info”** in a merchant:
   - *Pemeriksaan sebelum kirim* (code rules in `merchant_notebook/review.py`, not Paykings' own decision): percentages that do not total 100, average ticket above the maximum or the monthly volume, ZIP that does not belong to the state (USPS 3-digit table), EIN missing for an LLC/corporation, DBA flag vs DBA name, start date in the future, owner under 18, expired ID, ownership under 25%, routing number check digit, open conflicts. *Perbaiki* = must fix, *Periksa* = double-check.
   - *Minta info yang kurang*: an English message listing what is still empty, grouped by section, ready to copy and send to the merchant (asks for SSN, ID and account number to be sent securely).
-  - *Tahap kerja*: Baru → Menunggu info merchant → Siap diisi → Sudah diisi di Paykings → Disetujui / Ditolak. Stored in its own table, not in the record: not in the CSV and not carried by the portable `.mcnx` export.
-- **List**: columns *Tahap* (change it in place) and *Cek* (number to fix / to double-check), and a stage filter.
+  - *Status aplikasi* (M27), where the application is at Paykings: No info (default), Not submitted, Submitted, Signed / waiting underwriting, Approved, Declined.
+  - *Tahap persiapan*: Baru → Menunggu info merchant → Siap diisi.
+  - Both are stored in their own table, not in the record: not in the CSV and not carried by the portable `.mcnx` export. Databases from #24 are upgraded on start (old stages Sudah diisi / Disetujui / Ditolak become Submitted / Approved / Declined).
+- **List**: columns *Aplikasi* and *Tahap* (change them in place, colour per status) and *Cek* (number to fix / to double-check), filters for both; data status and last change under the business name.
 - **Tambah info** (list, per merchant): paste a reply from the merchant, then *Siapkan prompt Claude* (opens the Claude bridge on that merchant) or *Isi otomatis* (local). Only empty fields are filled; different values become conflicts.
 
 ## Guest mode for a computer you do not own (M18)

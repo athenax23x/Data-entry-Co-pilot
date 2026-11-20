@@ -87,3 +87,41 @@ def test_review_endpoint_and_stage(client):
     assert row["stage"] == "menunggu_info" and row["errors"] is not None and row["warnings"] is not None
     assert client.get(f"/api/merchants/{mid}/review").json()["stage"] == "menunggu_info"
     assert client.post("/api/merchants/MCN-20261120-099/stage", json={"stage": "baru"}).status_code == 404
+
+
+def test_application_status(client):
+    mid = client.post("/api/merchants", json={"text": TEXT}).json()["merchant_id"]
+    assert client.get(f"/api/merchants/{mid}/review").json()["app_status"] == "no_info"
+    assert client.get("/api/merchants").json()["merchants"][0]["app_status"] == "no_info"
+    assert client.post(f"/api/merchants/{mid}/stage", json={"stage": "siap_diisi"}).status_code == 200
+    r = client.post(f"/api/merchants/{mid}/application-status", json={"app_status": "signed_waiting_underwriting"})
+    assert r.status_code == 200
+    row = client.get("/api/merchants").json()["merchants"][0]
+    assert (row["stage"], row["app_status"]) == ("siap_diisi", "signed_waiting_underwriting")   # independent
+    assert client.post(f"/api/merchants/{mid}/application-status", json={"app_status": "pending"}).status_code == 422
+    assert client.post(f"/api/merchants/{mid}/stage", json={"stage": "disetujui"}).status_code == 422    # moved to app status
+    assert client.post("/api/merchants/MCN-20261120-099/application-status", json={"app_status": "approved"}).status_code == 404
+
+
+def test_an_m25_database_is_upgraded(tmp_path):
+    """A database made by #24 (no app_status column, old stages) opens and maps the old stages."""
+    import os
+    import sqlite3
+    from merchant_notebook import sqlstore as SQ
+    from merchant_notebook.keys import StaticKeyProvider
+    db = tmp_path / "merchants.db"
+    key = StaticKeyProvider(os.urandom(32))
+    store = SQ.SqliteMerchantStore(db, key)
+    rec = blank()
+    R.touch(rec, "2026-11-20T00:00:00Z")
+    store.save(rec, None)
+    store.close()
+    con = sqlite3.connect(db)
+    con.execute("DROP TABLE work_status")
+    con.execute("CREATE TABLE work_status (merchant_id TEXT PRIMARY KEY, stage TEXT NOT NULL, updated_at TEXT NOT NULL)")
+    con.execute("INSERT INTO work_status VALUES ('MCN-20261120-001', 'disetujui', 'x')")
+    con.commit(); con.close()
+    store = SQ.SqliteMerchantStore(db, key)
+    row = store.list()[0]
+    assert (row["stage"], row["app_status"]) == ("siap_diisi", "approved")
+    store.close()

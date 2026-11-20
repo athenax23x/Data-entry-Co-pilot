@@ -140,3 +140,15 @@ button.danger { background: var(--conflict); border-color: var(--conflict); colo
 .chk-count.warn { background: var(--inferred-bg); color: var(--inferred); }
 @media (max-width: 900px) { .review { grid-template-columns: 1fr; } }
 .stage-select { max-width: 190px; }
+/* Status aplikasi (M27) */
+.status-pair { display: grid; gap: 10px; }
+.status-pair label { display: grid; gap: 4px; }
+select.app-approved { background: var(--verified-bg); color: var(--verified); border-color: var(--verified); }
+select.app-declined { background: var(--conflict-bg); color: var(--conflict); border-color: var(--conflict); }
+select.app-submitted, select.app-signed_waiting_underwriting { background: var(--review-bg); color: var(--review); border-color: var(--review); }
+select.app-not_submitted { background: var(--inferred-bg); color: var(--inferred); }
+select option { background: var(--card); color: var(--fg); }
+.stage-select { max-width: 170px; }
+.name-cell .sub { margin-top: 2px; }
+.name-cell .rec { font-size: 11px; }
+select.stage-select[aria-label^="Status aplikasi"] { max-width: 210px; }
