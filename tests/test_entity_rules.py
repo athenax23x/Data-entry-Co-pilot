@@ -112,3 +112,10 @@ def test_owner_name_becomes_the_legal_name_only_when_the_user_says_so(session):
     session.execute("UPDATE FIELD legal_business_name = Alex Sample")
     f = active(session)["business_information"]["legal_business_name"]
     assert (f["value"], f["status"]) == ("Alex Sample", "verified")
+
+
+def test_dba_name_stops_before_the_next_sentence_about_the_owner():
+    from merchant_notebook import extract as X
+    m = X._DBA.search("Sunrise Auto Detailing LLC, DBA Sunrise Mobile Wash. Owner: Jordan Rivera (100% owner)")
+    assert m.group("n") == "Sunrise Mobile Wash"
+    assert X._DBA.search("Pat Example, sole proprietor, dba St. Louis Car Wash; pat@example.com").group("n") == "St. Louis Car Wash"
