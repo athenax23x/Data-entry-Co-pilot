@@ -43,7 +43,8 @@ def test_tickets_zip_ein_dba_dates_routing():
     put(rec, O + ("driver_license_expiration",), "01/01/2025")
     put(rec, (P, "routing_number"), "021000022")
     assert codes(rec) >= {"avg_gt_high", "avg_gt_volume", "high_gt_volume", "zip_state_business", "ein_needed",
-                          "dba_missing", "start_in_future", "owner_under_18", "driver_expired", "routing_checksum"}
+                          "start_in_future", "owner_under_18", "driver_expired", "routing_checksum"}
+    assert "dba_missing" not in codes(rec)                 # DBA Yes/No is a choice in Paykings (M28): not checked
 
 
 def test_a_clean_record_has_no_findings():
@@ -125,3 +126,28 @@ def test_an_m25_database_is_upgraded(tmp_path):
     row = store.list()[0]
     assert (row["stage"], row["app_status"]) == ("siap_diisi", "approved")
     store.close()
+
+
+def test_choice_fields_are_hidden_but_kept_in_the_csv(client):
+    """M28: Yes/No and fixed-list answers are clicked in Paykings: not in the form, the prompt or the message."""
+    from merchant_notebook import paykings_map as PM
+    from merchant_notebook.bridge import prompt
+    assert {"Currently Accepts Credit Cards", "Previously Terminated From Processing", "DBA Different From Legal Info",
+            "Business Type", "Tax Id Type", "Owner Title"} == PM.CHOICE_COLUMNS
+    assert not (set(prompt.allowed_specs().values()) & PM.CHOICE_SPECS)
+    msg = review.missing_message(blank())
+    for q in ("accept credit cards", "closed your account", "Business type", "Yes or No"):
+        assert q not in msg
+    mid = client.post("/api/merchants", json={"text": TEXT}).json()["merchant_id"]
+    row = next(__import__("csv").DictReader(__import__("io").StringIO(
+        client.get("/api/export/paykings.csv", params={"merchant_id": mid}).text)))
+    assert row["Owner Title"] == "Owner" and row["Business Type"] == "llc"       # values already known still go out
+
+
+def test_csv_dates_are_us_format():
+    from merchant_notebook import paykings_export as PE
+    rec = blank()
+    put(rec, ("business_information", "business_start_date"), "2019-03-15")
+    put(rec, O + ("date_of_birth",), "06/02/1980")
+    row = PE.row_for(rec)
+    assert row["Business Start Date"] == "03/15/2019" and row["Date of Birth"] == "06/02/1980"

@@ -27,7 +27,6 @@ def test_whole_flow_keeps_sensitive_data_out_of_the_prompt_the_sources_and_the_d
     rec = client.post("/api/merchants", json={"text": ""}).json()
     mid, version = rec["merchant_id"], rec["version"]
     good = [cand("business_information.legal_business_name", "Example Goods LLC", "Example Goods LLC"),
-            cand("business_entity_type", "llc", "Example Goods LLC"),
             cand("personal_information.owners[0].first_name", "Pat", "Owner: Pat Example"),
             cand("personal_information.owners[0].last_name", "Example", "Owner: Pat Example"),
             cand("contact_information.email", "contact@example.com", "Email: contact@example.com"),
@@ -38,7 +37,8 @@ def test_whole_flow_keeps_sensitive_data_out_of_the_prompt_the_sources_and_the_d
             cand("banking_information.bank_name", "Example Bank N.A.", "Bank: Example Bank N.A.")]
     bad = [cand("business_information.business_description", "Sells goods", "this quote is not in the text"),
            cand("banking_information.account_number", ACCOUNT, f"account number {ACCOUNT}"),      # sensitive: never allowed
-           cand("fulfillment_information.inventory_storage", "Warehouse", "Warehouse")]            # skipped column
+           cand("fulfillment_information.inventory_storage", "Warehouse", "Warehouse"),            # skipped column
+           cand("business_entity_type", "llc", "Example Goods LLC")]                                # choice in Paykings (M28)
     body = {"expected_version": version, "answer": answer(*good, *bad), "source_text": TEXT}
 
     # 3. preview: only the good ones pass

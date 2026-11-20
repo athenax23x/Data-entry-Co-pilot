@@ -126,22 +126,7 @@ def checks(rec: dict, today: date | None = None) -> list[dict]:
     ein = _value(rec, "ein")
     if etype and etype not in ("sole_proprietorship", "unknown") and not ein:
         out.append(_w("error", "ein_needed", "Badan usaha selain sole proprietorship biasanya wajib punya EIN; EIN masih kosong.",
-                      "business_entity_type", "ein"))
-    if str(_value(rec, "tax_id_type") or "").upper() == "EIN" and not ein:
-        out.append(_w("error", "ein_type_without_ein", "Tax Id Type = EIN, tetapi Federal Tax ID (EIN) kosong.", "tax_id_type", "ein"))
-
-    flag = str(_value(rec, "business_information.dba_different_from_legal") or "")
-    dba, legal = _value(rec, "business_information.dba_name"), _value(rec, "business_information.legal_business_name")
-    if flag.lower() == "yes" and not dba:
-        out.append(_w("error", "dba_missing", "DBA Different From Legal Info = Yes, tetapi DBA Name kosong.",
-                      "business_information.dba_different_from_legal", "business_information.dba_name"))
-    if flag.lower() == "no" and dba and legal and str(dba).strip().lower() != str(legal).strip().lower():
-        out.append(_w("warn", "dba_flag_no", "Ada DBA Name yang berbeda, tetapi DBA Different From Legal Info = No.",
-                      "business_information.dba_different_from_legal", "business_information.dba_name"))
-    if dba and not flag:
-        out.append(_w("warn", "dba_flag_empty", "Ada DBA Name; isi DBA Different From Legal Info dengan Yes.",
-                      "business_information.dba_different_from_legal"))
-
+                      "ein"))
     start = _date(_value(rec, "business_information.business_start_date"))
     if start and start > today:
         out.append(_w("error", "start_in_future", "Business Start Date ada di masa depan.", "business_information.business_start_date"))
@@ -166,10 +151,6 @@ def checks(rec: dict, today: date | None = None) -> list[dict]:
         out.append(_w("error", "routing_checksum", "Routing Number tidak lolos pemeriksaan digit (kemungkinan salah ketik).",
                       P + "routing_number"))
 
-    if str(_value(rec, P + "previously_terminated") or "").lower() == "yes":
-        out.append(_w("warn", "previously_terminated", "Merchant pernah diputus oleh processor. Siapkan penjelasannya.",
-                      P + "previously_terminated"))
-
     open_conflicts = sum(1 for c in rec.get("conflicts", []) if c.get("resolution", {}).get("state") == "open")
     if open_conflicts:
         out.append({"level": "error", "code": "open_conflicts", "fields": [],
@@ -185,17 +166,15 @@ _SECTIONS = [  # English heading for the merchant, and the fields in Paykings or
                   "contact_information.phone", "contact_information.email", "contact_information.customer_service_phone",
                   "contact_information.customer_service_email", "business_information.website"]),
     ("Business address", ["business_address.street_address", "business_address.suite", "business_address.city",
-                          "business_address.state", "business_address.zip",
-                          "business_information.dba_different_from_legal", "business_information.dba_name"]),
+                          "business_address.state", "business_address.zip", "business_information.dba_name"]),
     ("Sales and card processing", ["processing_information.public_sales_percentage", "processing_information.b2b_sales_percentage",
                                    "processing_information.national_sales_percentage",
                                    "processing_information.international_sales_percentage",
                                    "processing_information.card_present_percentage", "processing_information.keyed_percentage",
                                    "processing_information.ecommerce_percentage", "processing_information.monthly_card_volume",
-                                   "processing_information.average_ticket", "processing_information.high_ticket",
-                                   "processing_information.currently_accepts_cards", "processing_information.previously_terminated"]),
+                                   "processing_information.average_ticket", "processing_information.high_ticket"]),
     ("Bank", ["banking_information.bank_name", "banking_information.account_number", "processing_information.routing_number"]),
-    ("Business type and tax ID", ["business_entity_type", "ein"]),
+    ("Tax ID", ["ein"]),
     ("Owner", [OWNER + k for k in ("first_name", "last_name", "ownership_percentage", "email", "phone", "street_address",
                                    "city", "state", "zip", "ssn", "date_of_birth")]),
 ]
@@ -216,17 +195,13 @@ _ASK = {
     "business_address.city": "Business city",
     "business_address.state": "Business state",
     "business_address.zip": "Business ZIP code",
-    "business_information.dba_different_from_legal": "Do you operate under a different name (DBA)? Yes or No",
-    "business_information.dba_name": "DBA / trade name",
+    "business_information.dba_name": "DBA / trade name (if you use a name other than the legal name)",
     "processing_information.monthly_card_volume": "Expected monthly card sales (USD)",
     "processing_information.average_ticket": "Average sale amount (USD)",
     "processing_information.high_ticket": "Largest single sale amount (USD)",
-    "processing_information.currently_accepts_cards": "Do you accept credit cards today? Yes or No",
-    "processing_information.previously_terminated": "Has a card processor ever closed your account? Yes or No",
     "banking_information.bank_name": "Bank name",
     "banking_information.account_number": "Bank account number (please send securely, not in a plain email)",
     "processing_information.routing_number": "Bank routing number",
-    "business_entity_type": "Business type (sole proprietor, LLC, corporation, partnership)",
     "ein": "Federal Tax ID (EIN)",
     OWNER + "first_name": "Owner first name", OWNER + "last_name": "Owner last name",
     OWNER + "ownership_percentage": "Ownership percentage",

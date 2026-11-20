@@ -102,6 +102,17 @@ SKIPPED_COLUMNS = frozenset({
 })
 SKIPPED_SPECS = frozenset(COLUMN_TO_SPEC[c] for c in SKIPPED_COLUMNS if COLUMN_TO_SPEC.get(c))
 
+# M28: answers that Paykings offers as a choice to click (Yes/No, a fixed list), so nothing is typed. They are not
+# shown in the form or in fill mode, Claude is not asked for them and the merchant message does not ask for them.
+# Unlike SKIPPED_COLUMNS, a value that is already in the record still goes to the CSV (Owner Title stays "Owner").
+CHOICE_COLUMNS = frozenset({
+    "DBA Different From Legal Info", "Currently Accepts Credit Cards", "Previously Terminated From Processing",
+    "Business Type", "Tax Id Type", "Owner Title",
+})
+CHOICE_SPECS = frozenset(COLUMN_TO_SPEC[c] for c in CHOICE_COLUMNS)
+HIDDEN_COLUMNS = SKIPPED_COLUMNS | CHOICE_COLUMNS          # not in the form, the fill mode or the Claude prompt
+HIDDEN_SPECS = SKIPPED_SPECS | CHOICE_SPECS
+
 # Fields that may be stored locally but must never leave the laptop (no cloud AI, no logs).
 SENSITIVE_SPECS = frozenset({
     OWNER + "ssn", OWNER + "ssn_last4", OWNER + "driver_license_number", OWNER + "passport_number",

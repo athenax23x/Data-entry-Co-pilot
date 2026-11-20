@@ -128,6 +128,11 @@ Rules: empty values in the required original columns (everything except `EIN / N
 - **List**: columns *Aplikasi* and *Tahap* (change them in place, colour per status) and *Cek* (number to fix / to double-check), filters for both; data status and last change under the business name.
 - **Tambah info** (list, per merchant): paste a reply from the merchant, then *Siapkan prompt Claude* (opens the Claude bridge on that merchant) or *Isi otomatis* (local). Only empty fields are filled; different values become conflicts.
 
+## Form inputs (M28, M29)
+
+- **Choice fields hidden** (`CHOICE_COLUMNS` in `paykings_map.py`): DBA Different From Legal Info, Currently Accepts Credit Cards, Previously Terminated From Processing, Business Type, Tax Id Type, Owner Title. Paykings offers these as a click, so they are not in the form, the fill mode, the Claude prompt or the merchant message. A value already in the record still goes to the CSV (Owner Title stays "Owner").
+- **Typed inputs** (`web/src/inputs.ts`): dates accept digits only and are shown, copied and exported as MM/DD/YYYY (like a US driver license date of birth); phone numbers, ZIP, EIN, routing, SSN, account number, percentages and dollar amounts accept numbers only and are formatted while typing. *Simpan* stays off until the value is complete. The server checks every value again.
+
 ## Guest mode for a computer you do not own (M18)
 
 `jalankan-tamu.bat` (or `python -m merchant_notebook.api --guest`) is for an internet cafe or any shared PC:
