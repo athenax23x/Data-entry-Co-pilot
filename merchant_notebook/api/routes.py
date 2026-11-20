@@ -6,7 +6,7 @@ import re
 
 from fastapi import APIRouter, Request, Response
 
-from .. import extract as X, migrate, paykings_export, record as R, service as S
+from .. import extract as X, migrate, paykings_export, record as R, review, service as S
 from ..fields import resolve_target
 from ..paykings_map import SENSITIVE_SPECS
 from ..service import CommandError
@@ -73,10 +73,12 @@ def _progress(store, merchant_id: str) -> dict:
     try:
         rec = store.load(merchant_id)[0]
     except Exception:                            # a broken row must not hide the whole list
-        return {"filled": None, "total": None, "open_conflicts": None}
+        return {"filled": None, "total": None, "open_conflicts": None, "errors": None, "warnings": None}
     filled, total = paykings_export.form_progress(rec)
     open_c = sum(1 for c in rec.get("conflicts", []) if c.get("resolution", {}).get("state") == "open")
-    return {"filled": filled, "total": total, "open_conflicts": open_c}
+    found = review.checks(rec)
+    return {"filled": filled, "total": total, "open_conflicts": open_c,
+            "errors": sum(1 for w in found if w["level"] == "error"), "warnings": sum(1 for w in found if w["level"] != "error")}
 
 
 @router.get("/merchants")
@@ -117,6 +119,22 @@ async def duplicate_merchant(request: Request, merchant_id: str):
     R.add_source(rec, "other", now, label=f"Duplikat dari {merchant_id}")
     R.touch(rec, now)
     return _saved(request, rec, None)
+
+
+@router.get("/merchants/{merchant_id}/review")
+async def review_merchant(request: Request, merchant_id: str):
+    """Checks before the Paykings form (M24) and the message asking the merchant for what is missing (M23)."""
+    store = _store(request)
+    rec = store.load(merchant_id)[0]
+    return {"merchant_id": merchant_id, "checks": review.checks(rec),
+            "missing": [{k: it[k] for k in ("section", "label", "ask")} for it in review.missing(rec)],
+            "message": review.missing_message(rec), "stage": store.stage_of(merchant_id)}
+
+
+@router.post("/merchants/{merchant_id}/stage")
+async def set_stage(request: Request, merchant_id: str, body: schemas.Stage):
+    _store(request).set_stage(merchant_id, body.stage, _now(request))
+    return {"merchant_id": merchant_id, "stage": body.stage}
 
 
 @router.post("/merchants/{merchant_id}/archive")

@@ -3,6 +3,7 @@ import { go } from "../App";
 import * as api from "../api";
 import ExportButton from "../components/ExportButton";
 import FillMode from "../components/FillMode";
+import ReviewTab from "../components/ReviewTab";
 import { clearBridgeText, peekBridgeText } from "../handoff";
 import BridgeTab from "../components/BridgeTab";
 import ConflictPanel from "../components/ConflictPanel";
@@ -20,7 +21,8 @@ export default function Workspace({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [handoff] = useState(() => peekBridgeText(id));
   useEffect(() => { clearBridgeText(); }, []);
-  const [tab, setTab] = useState<"form" | "fill" | "bridge">(handoff ? "bridge" : "form");
+  const [tab, setTab] = useState<"form" | "fill" | "review" | "bridge">(handoff ? "bridge" : "form");
+  const [problems, setProblems] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -85,11 +87,15 @@ export default function Workspace({ id }: { id: string }) {
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "form"} className={tab === "form" ? "on" : ""} onClick={() => setTab("form")}>Formulir Paykings</button>
         <button type="button" role="tab" aria-selected={tab === "fill"} className={tab === "fill" ? "on" : ""} onClick={() => setTab("fill")}>Mode isi form</button>
+        <button type="button" role="tab" aria-selected={tab === "review"} className={tab === "review" ? "on" : ""} onClick={() => setTab("review")}>
+          Cek &amp; minta info{problems ? <span className="tab-count" aria-label={`${problems} masalah`}>{problems}</span> : null}
+        </button>
         <button type="button" role="tab" aria-selected={tab === "bridge"} className={tab === "bridge" ? "on" : ""} onClick={() => setTab("bridge")}>Jembatan Claude</button>
       </div>
       <ErrorBanner message={error} />
       {notice && <div className="banner ok" role="status">{notice}</div>}
       {tab === "fill" && <FillMode merchantId={id} record={record} />}
+      {tab === "review" && <ReviewTab merchantId={id} version={version} onCount={setProblems} />}
       <div hidden={tab !== "bridge"}>
         <BridgeTab merchantId={id} version={version} initialSource={handoff} onStale={() => void load()}
                    onApply={(answer, sourceText, accept) => write((v) => api.bridgeApply(id, v, answer, sourceText, accept),

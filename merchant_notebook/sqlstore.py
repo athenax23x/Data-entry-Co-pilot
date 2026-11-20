@@ -186,6 +186,9 @@ def _decrypt_doc(doc: dict, cipher: FieldCipher) -> dict:
 
 
 # ---------------------------------------------------------------- store
+WORK_STAGES = ("baru", "menunggu_info", "siap_diisi", "sudah_diisi", "disetujui", "ditolak")
+
+
 class SqliteMerchantStore:
     def __init__(self, path, keys: KeyProvider):
         self.path = Path(path)
@@ -208,6 +211,11 @@ class SqliteMerchantStore:
             CREATE TABLE IF NOT EXISTS archived (
                 merchant_id TEXT PRIMARY KEY REFERENCES merchants(merchant_id) ON DELETE CASCADE,
                 archived_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS work_status (
+                merchant_id TEXT PRIMARY KEY REFERENCES merchants(merchant_id) ON DELETE CASCADE,
+                stage       TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
             );
         """)
         self._db.execute(f"PRAGMA user_version = {SCHEMA_VERSION_DB}")
@@ -290,7 +298,8 @@ class SqliteMerchantStore:
         """Summaries only (no decryption), archived ones included (flag 'archived'). query matches the business name
         (case-insensitive) or the id."""
         cols = ("SELECT m.merchant_id, m.legal_name, m.entity_type, m.record_status, m.version, m.updated_at, "
-                "a.archived_at FROM merchants m LEFT JOIN archived a ON a.merchant_id = m.merchant_id ")
+                "a.archived_at, w.stage FROM merchants m LEFT JOIN archived a ON a.merchant_id = m.merchant_id "
+                "LEFT JOIN work_status w ON w.merchant_id = m.merchant_id ")
         if query:
             q = query.strip()
             like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
@@ -299,7 +308,7 @@ class SqliteMerchantStore:
         else:
             rows = self._db.execute(cols + "ORDER BY m.updated_at DESC").fetchall()
         keys = ("merchant_id", "legal_name", "entity_type", "record_status", "version", "updated_at")
-        return [dict(zip(keys, r[:6]), archived=r[6] is not None) for r in rows]
+        return [dict(zip(keys, r[:6]), archived=r[6] is not None, stage=r[7] or "baru") for r in rows]
 
     # -- archive and delete (M22). Archiving hides a merchant from the list; only an archived one can be deleted.
     def set_archived(self, merchant_id: str, archived: bool, now: str) -> None:
@@ -311,6 +320,21 @@ class SqliteMerchantStore:
                                  (merchant_id, now))
             else:
                 self._db.execute("DELETE FROM archived WHERE merchant_id = ?", (merchant_id,))
+
+    # -- work stage (M25): where the merchant is in the person's own process. Not part of the record.
+    def set_stage(self, merchant_id: str, stage: str, now: str) -> None:
+        if stage not in WORK_STAGES:
+            raise RefusedRecord("Unknown work stage.")
+        with self._tx():
+            if not self._exists(merchant_id):
+                raise NotFound(f"{merchant_id} is not in the database.")
+            self._db.execute("INSERT INTO work_status (merchant_id, stage, updated_at) VALUES (?, ?, ?) "
+                             "ON CONFLICT(merchant_id) DO UPDATE SET stage = excluded.stage, updated_at = excluded.updated_at",
+                             (merchant_id, stage, now))
+
+    def stage_of(self, merchant_id: str) -> str:
+        row = self._db.execute("SELECT stage FROM work_status WHERE merchant_id = ?", (merchant_id,)).fetchone()
+        return row[0] if row else "baru"
 
     def delete(self, merchant_id: str, expected_version: int) -> None:
         """Remove an archived merchant for good. The version must match, so a merchant changed elsewhere is kept."""
