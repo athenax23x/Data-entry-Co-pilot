@@ -1,6 +1,7 @@
 """Endpoints. Thin: they call service.py (the rules) and SqliteMerchantStore (the storage)."""
 from __future__ import annotations
 
+import copy
 import re
 
 from fastapi import APIRouter, Request, Response
@@ -67,9 +68,23 @@ async def health():
     return {"status": "ok", "schema_version": migrate.V2_VERSION}
 
 
+def _progress(store, merchant_id: str) -> dict:
+    """How many Paykings form fields are filled, and how many conflicts are open. Counts only, no values."""
+    try:
+        rec = store.load(merchant_id)[0]
+    except Exception:                            # a broken row must not hide the whole list
+        return {"filled": None, "total": None, "open_conflicts": None}
+    filled, total = paykings_export.form_progress(rec)
+    open_c = sum(1 for c in rec.get("conflicts", []) if c.get("resolution", {}).get("state") == "open")
+    return {"filled": filled, "total": total, "open_conflicts": open_c}
+
+
 @router.get("/merchants")
-async def list_merchants(request: Request, q: str | None = None):
-    return {"merchants": _store(request).list(q)}
+async def list_merchants(request: Request, q: str | None = None, archived: bool = False):
+    """The merchant list. archived=true lists only the archived ones; by default they are hidden."""
+    store = _store(request)
+    rows = [m for m in store.list(q) if m["archived"] == archived]
+    return {"merchants": [m | _progress(store, m["merchant_id"]) for m in rows]}
 
 
 @router.post("/merchants", status_code=201)
@@ -89,6 +104,32 @@ async def create_merchant(request: Request, body: schemas.NewMerchant):
 async def get_merchant(request: Request, merchant_id: str):
     rec, version = _store(request).load(merchant_id)
     return {"merchant_id": merchant_id, "version": version, "record": rec}
+
+
+@router.post("/merchants/{merchant_id}/duplicate", status_code=201)
+async def duplicate_merchant(request: Request, merchant_id: str):
+    """A new merchant with the same values (for example a second business of the same owner)."""
+    src = _store(request).load(merchant_id)[0]
+    now = _now(request)
+    rec = copy.deepcopy(src)
+    rec["merchant_id"] = _new_id(request, now)
+    rec["created_at"] = now
+    R.add_source(rec, "other", now, label=f"Duplikat dari {merchant_id}")
+    R.touch(rec, now)
+    return _saved(request, rec, None)
+
+
+@router.post("/merchants/{merchant_id}/archive")
+async def archive_merchant(request: Request, merchant_id: str, body: schemas.Archive):
+    _store(request).set_archived(merchant_id, body.archived, _now(request))
+    return {"merchant_id": merchant_id, "archived": body.archived}
+
+
+@router.delete("/merchants/{merchant_id}")
+async def delete_merchant(request: Request, merchant_id: str, expected_version: int):
+    """Delete for good. Only an archived merchant, at the version the person last saw."""
+    _store(request).delete(merchant_id, expected_version)
+    return {"merchant_id": merchant_id, "deleted": True}
 
 
 @router.patch("/merchants/{merchant_id}/fields/{path}")
@@ -147,7 +188,7 @@ async def export_paykings(request: Request, merchant_id: str | None = None, incl
     store = _store(request)
     if merchant_id and not re.fullmatch(r"MCN-[0-9]{8}-[0-9]{3,}", merchant_id):
         raise NotFound(f"{merchant_id} is not a merchant id.")            # also keeps odd text out of the file name
-    ids = [merchant_id] if merchant_id else [m["merchant_id"] for m in store.list()]
+    ids = [merchant_id] if merchant_id else [m["merchant_id"] for m in store.list() if not m["archived"]]
     records = [store.load(i)[0] for i in ids]
     name = (merchant_id or "all-merchants") + ("-with-sensitive" if include_sensitive else "") + ".csv"
     return Response(paykings_export.render_csv(records, include_sensitive), media_type="text/csv; charset=utf-8",

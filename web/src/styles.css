@@ -87,3 +87,35 @@ tr.rejected td { background: var(--conflict-bg); }
 .export { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .guest-banner { background: #5a4300; color: #fff3cd; padding: 8px 16px; font-size: 14px; border-bottom: 1px solid #a07800; }
+/* Mode isi form (M20) */
+.fill { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.fill-card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
+.fill-label { font-size: 15px; color: var(--muted); margin-top: 6px; }
+.fill-value { font-size: 26px; font-weight: 600; margin: 4px 0 14px; word-break: break-word; }
+.fill-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+button.big { padding: 10px 22px; font-size: 16px; }
+.fill-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.meter { flex: 1; height: 8px; background: var(--missing-bg); border-radius: 4px; overflow: hidden; }
+.meter > div { height: 100%; background: var(--verified); }
+.tag-sensitive { margin-left: 8px; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--conflict-bg); color: var(--conflict); }
+.fill-empty summary { cursor: pointer; color: var(--muted); }
+.fill-list { list-style: none; margin: 0; padding: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; max-height: 70vh; overflow-y: auto; }
+.fill-list button { width: 100%; text-align: left; border: 0; background: none; display: flex; gap: 8px; padding: 4px 6px; color: var(--fg); }
+.fill-list li.on button { background: var(--review-bg); border-radius: 4px; }
+.fill-list li.ok .fl { color: var(--muted); text-decoration: line-through; }
+.fill-list .tick { width: 14px; color: var(--verified); }
+@media (max-width: 800px) { .fill { grid-template-columns: 1fr; } }
+.fill .copied { font-size: 13px; color: var(--verified); } .fill .copied.fail { color: var(--conflict); }
+/* Daftar merchant (M21, M22) */
+.quick { display: flex; gap: 10px; align-items: stretch; margin-bottom: 14px; }
+.quick textarea { flex: 1; resize: vertical; font: inherit; color: var(--fg); }
+.quick-actions { display: flex; flex-direction: column; gap: 6px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.filters button.on { border-color: var(--accent); background: var(--review-bg); }
+.prog { display: inline-flex; align-items: center; gap: 8px; }
+.meter.mini { display: inline-block; width: 60px; flex: none; height: 6px; }
+.meter.mini > span { display: block; height: 100%; background: var(--verified); }
+.row-actions { display: flex; gap: 6px; align-items: center; }
+.row-actions button { padding: 3px 9px; font-size: 13px; }
+button.danger { background: var(--conflict); border-color: var(--conflict); color: #fff; }
+.danger-text { color: var(--conflict); font-size: 13px; }
