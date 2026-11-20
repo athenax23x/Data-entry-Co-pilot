@@ -34,6 +34,7 @@ class Proposal:
     ok: bool
     reason: str | None = None
     outcome: str | None = None  # filled | review | unchanged | conflict | ignored (what applying would do)
+    stored: object = None       # the normalized value exactly as it is stored (a number stays a number); not public
 
     def public(self) -> dict:
         return {"index": self.index, "path": self.path, "value": self.value, "evidence": self.evidence,
@@ -117,7 +118,7 @@ def check_answer(rec: dict, answer: str, source_text: str, now: str = "1970-01-0
         taken.add((path, str(norm)))
         out.append(Proposal(i, path, norm if isinstance(norm, str) else str(norm), ev_short,
                             "needs_review" if amb else "inferred", amb, True, None,
-                            _outcome(rec, keys, norm, "needs_review" if amb else "inferred", ev_short, now)))
+                            _outcome(rec, keys, norm, "needs_review" if amb else "inferred", ev_short, now), norm))
     return out
 
 
@@ -153,7 +154,7 @@ def apply_proposals(rec: dict, proposals: list[Proposal], accept: list[int], now
     def merge(target: dict, sid: str) -> list[dict]:
         done = []
         for p in chosen:
-            out = R.merge_value(target, resolve_target(p.path), p.value, p.status, p.evidence, sid, now)
+            out = R.merge_value(target, resolve_target(p.path), p.stored, p.status, p.evidence, sid, now)
             done.append({"index": p.index, "path": p.path, "outcome": out})
         return done
 

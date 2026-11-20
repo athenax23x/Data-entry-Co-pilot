@@ -124,3 +124,22 @@ def test_merchant_b_is_not_changed_by_applying_to_a(client):
     before = client.get(f"/api/merchants/{b}").json()
     client.post(f"/api/merchants/{a}/bridge/apply", json=body(1, [PHONE], accept=[0]))
     assert client.get(f"/api/merchants/{b}").json() == before
+
+
+def test_numbers_from_claude_are_stored_as_numbers_and_apply_succeeds(client):
+    """Percentages and dollar amounts passed the check but failed schema validation on apply (stored as text)."""
+    import json as _json
+    text = "100% public. 80% card present. Monthly volume about $40,000, average ticket $85."
+    rec = client.post("/api/merchants", json={"text": ""}).json()
+    ans = _json.dumps({"candidates": [
+        {"path": "processing_information.public_sales_percentage", "value": "100", "evidence": "100% public"},
+        {"path": "processing_information.card_present_percentage", "value": "80", "evidence": "80% card present"},
+        {"path": "processing_information.monthly_card_volume", "value": "40000", "evidence": "Monthly volume about $40,000"},
+        {"path": "processing_information.average_ticket", "value": "85", "evidence": "average ticket $85"}]})
+    body = {"expected_version": rec["version"], "answer": ans, "source_text": text}
+    ps = client.post(f"/api/merchants/{rec['merchant_id']}/bridge/preview", json=body).json()["proposals"]
+    assert all(p["ok"] for p in ps) and "stored" not in ps[0]
+    done = client.post(f"/api/merchants/{rec['merchant_id']}/bridge/apply", json=body | {"accept": [0, 1, 2, 3]})
+    assert done.status_code == 200, done.text
+    pi = done.json()["record"]["processing_information"]
+    assert pi["public_sales_percentage"]["value"] == 100 and pi["monthly_card_volume"]["value"] == 40000
