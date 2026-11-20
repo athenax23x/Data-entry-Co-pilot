@@ -63,3 +63,31 @@ describe("Daftar merchant", () => {
     await waitFor(() => expect(calls.find((c) => c.method === "DELETE")?.url).toBe("/api/merchants/MCN-20261118-002?expected_version=2"));
   });
 });
+
+describe("Tambah info", () => {
+  beforeEach(() => { setTokenForTests("tok"); window.location.hash = ""; });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); setTokenForTests(null); });
+
+  it("adds text to an existing merchant locally with its version, or hands it to the Claude bridge", async () => {
+    const calls: { url: string; method: string; body?: string }[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation((url, init) => {
+      const method = (init as RequestInit)?.method ?? "GET";
+      calls.push({ url: String(url), method, body: (init as RequestInit)?.body as string | undefined });
+      if (method === "POST") return json(200, { merchant_id: "MCN-20261120-001", version: 3, record: {} });
+      return json(200, { merchants: [row("MCN-20261120-001", "Incomplete")] });
+    });
+    const u = userEvent.setup();
+    render(<MerchantList />);
+    await u.click(await screen.findByRole("button", { name: "Tambah info MCN-20261120-001" }));
+    await u.type(screen.getByLabelText("Info tambahan MCN-20261120-001"), "Started 03/15/2019");
+    await u.click(screen.getByRole("button", { name: "Isi otomatis" }));
+    await waitFor(() => expect(calls.find((c) => c.method === "POST")?.url).toBe("/api/merchants/MCN-20261120-001/context"));
+    expect(JSON.parse(calls.find((c) => c.method === "POST")!.body!)).toEqual({ expected_version: 2, text: "Started 03/15/2019" });
+
+    await u.click(await screen.findByRole("button", { name: "Tambah info MCN-20261120-001" }));
+    await u.type(screen.getByLabelText("Info tambahan MCN-20261120-001"), "Bank: Example Bank N.A.");
+    await u.click(screen.getByRole("button", { name: "Siapkan prompt Claude" }));
+    await waitFor(() => expect(window.location.hash).toBe("#/m/MCN-20261120-001"));
+    expect(peekBridgeText("MCN-20261120-001")).toBe("Bank: Example Bank N.A.");
+  });
+});

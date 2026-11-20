@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { go } from "../App";
 import * as api from "../api";
 import type { Summary } from "../api";
@@ -30,6 +30,9 @@ export default function MerchantList() {
   const [busy, setBusy] = useState(false);
   const [paste, setPaste] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<api.Stage | "all">("all");
+  const [addFor, setAddFor] = useState<string | null>(null);
+  const [addText, setAddText] = useState("");
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
@@ -77,7 +80,29 @@ export default function MerchantList() {
     }
   }
 
-  const shown = (rows ?? []).filter((r) => filter === "all" || r.record_status === filter);
+  async function addInfo(r: Summary, mode: "local" | "claude") {
+    if (mode === "claude") {
+      giveBridgeText(r.merchant_id, addText);
+      go(`#/m/${r.merchant_id}`);
+      return;
+    }
+    await act(() => api.addContext(r.merchant_id, r.version, addText), `Info ditambahkan ke ${r.merchant_id}.`);
+    setAddFor(null);
+    setAddText("");
+  }
+
+  async function changeStage(r: Summary, stage: api.Stage) {
+    setRows((old) => old && old.map((x) => (x.merchant_id === r.merchant_id ? { ...x, stage } : x)));
+    try {
+      await api.setStage(r.merchant_id, stage);
+    } catch (e) {
+      setError(errorMessage(e));
+      reload();
+    }
+  }
+
+  const shown = (rows ?? []).filter((r) => (filter === "all" || r.record_status === filter)
+    && (stageFilter === "all" || (r.stage ?? "baru") === stageFilter));
   const count = (f: Filter) => (rows ?? []).filter((r) => f === "all" || r.record_status === f).length;
 
   return (
@@ -121,6 +146,11 @@ export default function MerchantList() {
               {f.label} <span className="muted">({count(f.key)})</span>
             </button>
           ))}
+          <select aria-label="Filter tahap kerja" className="stage-select" value={stageFilter}
+                  onChange={(e) => setStageFilter(e.target.value as api.Stage | "all")}>
+            <option value="all">Semua tahap</option>
+            {api.STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
         </div>
       )}
 
@@ -133,26 +163,38 @@ export default function MerchantList() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>ID</th><th>Nama usaha</th><th>Tipe entitas</th><th>Status</th><th>Terisi</th><th>Konflik</th><th>Terakhir diubah</th><th>Aksi</th></tr>
+              <tr><th>ID</th><th>Nama usaha</th><th>Status</th><th>Tahap</th><th>Terisi</th><th>Cek</th><th>Terakhir diubah</th><th>Aksi</th></tr>
             </thead>
             <tbody>
               {shown.map((r) => (
-                <tr key={r.merchant_id}>
+                <Fragment key={r.merchant_id}>
+                <tr>
                   <td><a href={`#/m/${r.merchant_id}`}>{r.merchant_id}</a></td>
                   <td>{formatValue(r.legal_name)}</td>
-                  <td>{formatValue(r.entity_type)}</td>
                   <td><span className={`rec rec-${r.record_status.replace(" ", "-").toLowerCase()}`}>{recordStatusLabel(r.record_status)}</span></td>
+                  <td>
+                    <select aria-label={`Tahap ${r.merchant_id}`} className="stage-select" value={r.stage ?? "baru"} disabled={archived}
+                            onChange={(e) => void changeStage(r, e.target.value as api.Stage)}>
+                      {api.STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                  </td>
                   <td>
                     <span className="prog" title="Field formulir Paykings yang sudah terisi">
                       {progressText(r)}
                       {r.filled != null && r.total ? <span className="meter mini"><span style={{ width: `${(100 * r.filled) / r.total}%` }} /></span> : null}
                     </span>
                   </td>
-                  <td>{r.open_conflicts ? <span className="rec rec-needs-review">{r.open_conflicts}</span> : <span className="muted">0</span>}</td>
+                  <td title="Hasil tab Cek & minta info: perlu diperbaiki / perlu diperiksa">
+                    {r.errors ? <span className="chk-count err">{r.errors} perbaiki</span> : null}
+                    {r.warnings ? <span className="chk-count warn">{r.warnings} periksa</span> : null}
+                    {!r.errors && !r.warnings && r.errors != null ? <span className="muted">OK</span> : null}
+                  </td>
                   <td>{formatTime(r.updated_at)}</td>
                   <td className="row-actions">
                     {!archived ? (
                       <>
+                        <button type="button" disabled={busy} aria-label={`Tambah info ${r.merchant_id}`}
+                                onClick={() => { setAddFor(addFor === r.merchant_id ? null : r.merchant_id); setAddText(""); }}>Tambah info</button>
                         <button type="button" disabled={busy} aria-label={`Duplikat ${r.merchant_id}`}
                                 onClick={() => void act(() => api.duplicateMerchant(r.merchant_id), `${r.merchant_id} diduplikat.`)}>Duplikat</button>
                         <button type="button" disabled={busy} aria-label={`Arsipkan ${r.merchant_id}`}
@@ -175,6 +217,23 @@ export default function MerchantList() {
                     )}
                   </td>
                 </tr>
+                {addFor === r.merchant_id && !archived && (
+                  <tr className="addinfo">
+                    <td colSpan={8}>
+                      <textarea aria-label={`Info tambahan ${r.merchant_id}`} rows={3} value={addText} autoFocus
+                                placeholder="Tempel balasan atau info baru dari merchant…" onChange={(e) => setAddText(e.target.value)} />
+                      <div className="fill-actions">
+                        <button type="button" className="primary" disabled={busy || !addText.trim()} onClick={() => void addInfo(r, "claude")}>
+                          Siapkan prompt Claude
+                        </button>
+                        <button type="button" disabled={busy || !addText.trim()} onClick={() => void addInfo(r, "local")}>Isi otomatis</button>
+                        <button type="button" onClick={() => setAddFor(null)}>Batal</button>
+                        <span className="muted small">Hanya mengisi yang kosong; nilai yang berbeda menjadi konflik, tidak menimpa.</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>

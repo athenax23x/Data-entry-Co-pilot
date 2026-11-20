@@ -20,6 +20,10 @@ class Archive(_Body):
     archived: bool = True
 
 
+class Stage(_Body):
+    stage: Literal["baru", "menunggu_info", "siap_diisi", "sudah_diisi", "disetujui", "ditolak"]
+
+
 class FieldUpdate(_Body):
     expected_version: int = Field(ge=1)
     action: Literal["set", "confirm", "missing"] = "set"

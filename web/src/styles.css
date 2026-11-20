@@ -115,7 +115,28 @@ button.big { padding: 10px 22px; font-size: 16px; }
 .prog { display: inline-flex; align-items: center; gap: 8px; }
 .meter.mini { display: inline-block; width: 60px; flex: none; height: 6px; }
 .meter.mini > span { display: block; height: 100%; background: var(--verified); }
-.row-actions { display: flex; gap: 6px; align-items: center; }
+.row-actions { white-space: normal; min-width: 150px; }
+.row-actions > * { margin: 2px 4px 2px 0; }
 .row-actions button { padding: 3px 9px; font-size: 13px; }
 button.danger { background: var(--conflict); border-color: var(--conflict); color: #fff; }
 .danger-text { color: var(--conflict); font-size: 13px; }
+/* Periksa (M23-M25) */
+.review { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.review h2 { font-size: 16px; margin: 0 0 10px; }
+.review textarea.big { width: 100%; box-sizing: border-box; font: 13px/1.5 ui-monospace, Consolas, monospace; margin-bottom: 10px; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.checks li { display: flex; gap: 10px; align-items: baseline; }
+.chk-tag { flex: none; font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+.chk-error .chk-tag { background: var(--conflict-bg); color: var(--conflict); }
+.chk-warn .chk-tag { background: var(--inferred-bg); color: var(--inferred); }
+.ok-text { color: var(--verified); }
+.tab-count { margin-left: 6px; font-size: 11px; padding: 1px 6px; border-radius: 9px; background: var(--conflict); color: #fff; }
+.stage-select { padding: 3px 6px; font-size: 13px; }
+.addinfo td { background: var(--bg); }
+.addinfo textarea { width: 100%; box-sizing: border-box; font: inherit; color: var(--fg); }
+.addinfo .fill-actions { margin-top: 6px; }
+.chk-count { font-size: 12px; padding: 1px 7px; border-radius: 4px; }
+.chk-count.err { background: var(--conflict-bg); color: var(--conflict); }
+.chk-count.warn { background: var(--inferred-bg); color: var(--inferred); }
+@media (max-width: 900px) { .review { grid-template-columns: 1fr; } }
+.stage-select { max-width: 190px; }

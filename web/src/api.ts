@@ -28,6 +28,23 @@ export interface Summary {
   merchant_id: string; legal_name: string | null; entity_type: string | null;
   record_status: string; version: number; updated_at: string;
   archived?: boolean; filled?: number | null; total?: number | null; open_conflicts?: number | null;
+  errors?: number | null; warnings?: number | null; stage?: Stage;
+}
+
+// ---- M23-M25: checks, missing-info message, work stage
+export type Stage = "baru" | "menunggu_info" | "siap_diisi" | "sudah_diisi" | "disetujui" | "ditolak";
+export const STAGES: { key: Stage; label: string }[] = [
+  { key: "baru", label: "Baru" },
+  { key: "menunggu_info", label: "Menunggu info merchant" },
+  { key: "siap_diisi", label: "Siap diisi" },
+  { key: "sudah_diisi", label: "Sudah diisi di Paykings" },
+  { key: "disetujui", label: "Disetujui" },
+  { key: "ditolak", label: "Ditolak" },
+];
+export interface Check { level: "error" | "warn"; code: string; message: string; fields: string[] }
+export interface Review {
+  merchant_id: string; checks: Check[]; stage: Stage; message: string;
+  missing: { section: string; label: string; ask: string }[];
 }
 export interface RecordReply {
   merchant_id: string; version: number; record: MerchantRecord;
@@ -101,6 +118,9 @@ export function listMerchants(q: string, archived = false) {
 export const duplicateMerchant = (id: string) => call<RecordReply>("POST", `/api/merchants/${encodeURIComponent(id)}/duplicate`);
 export const archiveMerchant = (id: string, archived: boolean) =>
   call<{ merchant_id: string; archived: boolean }>("POST", `/api/merchants/${encodeURIComponent(id)}/archive`, { archived });
+export const getReview = (id: string) => call<Review>("GET", `/api/merchants/${encodeURIComponent(id)}/review`);
+export const setStage = (id: string, stage: Stage) =>
+  call<{ merchant_id: string; stage: Stage }>("POST", `/api/merchants/${encodeURIComponent(id)}/stage`, { stage });
 export const deleteMerchant = (id: string, expected_version: number) =>
   call<{ merchant_id: string; deleted: boolean }>("DELETE", `/api/merchants/${encodeURIComponent(id)}?expected_version=${expected_version}`);
 export const createMerchant = (text: string) => call<RecordReply>("POST", "/api/merchants", { text });
