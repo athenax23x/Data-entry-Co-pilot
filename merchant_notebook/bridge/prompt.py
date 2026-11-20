@@ -25,7 +25,7 @@ def path_of(spec: str) -> str:
 
 def allowed_specs() -> dict[str, str]:
     """{path: spec} for every field Claude may fill: the Paykings form fields minus the sensitive and the skipped ones."""
-    return {path_of(s): s for s in PM.COLUMN_TO_SPEC.values() if s and s not in PM.SENSITIVE_SPECS and s not in PM.SKIPPED_SPECS}
+    return {path_of(s): s for s in PM.COLUMN_TO_SPEC.values() if s and s not in PM.SENSITIVE_SPECS and s not in PM.HIDDEN_SPECS}
 
 
 def sensitive_paths() -> frozenset[str]:

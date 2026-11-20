@@ -117,7 +117,7 @@ def test_the_prompt_has_the_rules_and_no_sensitive_values_or_fields():
 
 
 def test_the_allowed_list_is_the_paykings_map_minus_the_sensitive_and_skipped_fields():
-    assert set(prompt.allowed_specs().values()) == {s for s in PM.COLUMN_TO_SPEC.values() if s} - PM.SENSITIVE_SPECS - PM.SKIPPED_SPECS
+    assert set(prompt.allowed_specs().values()) == {s for s in PM.COLUMN_TO_SPEC.values() if s} - PM.SENSITIVE_SPECS - PM.HIDDEN_SPECS
 
 
 def test_text_that_looks_like_a_template_marker_cannot_change_the_prompt():

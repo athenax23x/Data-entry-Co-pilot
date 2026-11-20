@@ -3,6 +3,7 @@ import type { MerchantRecord } from "../api";
 import { STEPS } from "../layout.generated";
 import { getField } from "../recordpath";
 import { formatValue } from "../status";
+import { toUsDate } from "../inputs";
 
 // "Mode isi form" (M20): walk the Paykings form in its own order, one value at a time.
 // "Salin & lanjut" copies the current value and moves to the next one, so the person only switches windows and pastes.
@@ -18,7 +19,8 @@ export function fillQueue(record: MerchantRecord): { items: QueueItem[]; empty: 
       const f = getField(record, def.path);
       if (!f) continue;
       if (f.value === null || f.value === undefined || f.value === "") empty.push({ step: step.title, label: def.label });
-      else items.push({ step: step.title, label: def.label, path: def.path, value: String(f.value), sensitive: def.sensitive });
+      else items.push({ step: step.title, label: def.label, path: def.path,
+                        value: def.kind === "date" ? toUsDate(f.value) : String(f.value), sensitive: def.sensitive });
     }
   }
   return { items, empty };

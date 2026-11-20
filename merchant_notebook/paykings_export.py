@@ -12,10 +12,11 @@ import re
 from pathlib import Path
 
 from . import fields, record as R
-from .paykings_map import COLUMN_TO_SPEC, RECORD_COLUMNS, SENSITIVE_SPECS, SKIPPED_COLUMNS
+from .paykings_map import COLUMN_TO_SPEC, HIDDEN_COLUMNS, RECORD_COLUMNS, SENSITIVE_SPECS, SKIPPED_COLUMNS
 
 _LAYOUT = json.loads((Path(__file__).resolve().parent.parent / "preview_tool" / "paykings_layout.json").read_text(encoding="utf-8"))
 TEMPLATE_COLUMNS = [_LAYOUT["id_column"], _LAYOUT["status_column"]] + [c for st in _LAYOUT["steps"] for c in st["columns"]]
+DATE_COLUMNS = frozenset(_LAYOUT["date_columns"])
 
 # A cell that starts like this would be run as a formula by a spreadsheet. "+1 (555)..." and "-5" are plain values.
 _FORMULA = re.compile(r"^(?:[=@\t\r]|[+\-](?![\d\s.(]))")
@@ -40,7 +41,16 @@ def row_for(rec: dict, include_sensitive: bool = False) -> dict:
             row[col] = _cell(R.get_field(rec, fields.spec_keys(spec))["value"])
         except R.RecordError:
             row[col] = ""
+        if col in DATE_COLUMNS:
+            row[col] = _us_date(row[col])
     return row
+
+
+def _us_date(s: str) -> str:
+    """Dates go out as MM/DD/YYYY (the Paykings form and the CSV preview use that); Business Start Date is stored
+    as YYYY-MM-DD."""
+    m = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", s)
+    return f"{m.group(2)}/{m.group(3)}/{m.group(1)}" if m else s
 
 
 def render_csv(records: list[dict], include_sensitive: bool = False) -> str:
@@ -53,10 +63,10 @@ def render_csv(records: list[dict], include_sensitive: bool = False) -> str:
 
 
 def form_progress(rec: dict) -> tuple[int, int]:
-    """(filled, total) over the Paykings form fields that are collected (skipped columns left out)."""
+    """(filled, total) over the Paykings form fields shown in the form (skipped and choice columns left out)."""
     filled = total = 0
     for col, spec in COLUMN_TO_SPEC.items():
-        if not spec or col in SKIPPED_COLUMNS:
+        if not spec or col in HIDDEN_COLUMNS:
             continue
         total += 1
         try:
