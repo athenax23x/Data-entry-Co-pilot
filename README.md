@@ -110,6 +110,13 @@ Rules: empty values in the required original columns (everything except `EIN / N
 
 - **Real-browser check (optional, developer):** `python tools/browser_smoke.py` starts the real server with a throwaway database and drives Chrome through the whole flow (click-to-copy, CSV download, Claude bridge, masking). Needs `pip install playwright` and Chrome; it is not part of `pytest`.
 
+## Faster daily work: fill mode, quick paste, archive (M20–M22)
+
+- **Mode isi form** (tab in a merchant): walks the Paykings form in its own order. *Salin & lanjut* copies the current value and moves to the next; a list on the right shows what is done, and the empty fields are listed under the card. Progress is kept in memory while the page is open (no browser storage).
+- **Tempel cepat** (list page): paste the merchant text, then *Buat & siapkan prompt Claude* (new empty merchant, Claude bridge opens with the masked prompt ready; the text is handed over in memory, never in the URL) or *Buat & isi otomatis* (local auto-fill only).
+- **List**: column *Terisi* (filled Paykings fields, e.g. 44/54), open conflicts, a status filter, and *Duplikat* (a new merchant with the same values).
+- **Arsipkan**: hides a merchant from the list and from the all-merchants CSV. *Lihat arsip* to restore it, or to delete it for good (asks first; only archived merchants can be deleted, at the version shown). The backup made by the last `jalankan.bat` still holds a deleted merchant.
+
 ## Guest mode for a computer you do not own (M18)
 
 `jalankan-tamu.bat` (or `python -m merchant_notebook.api --guest`) is for an internet cafe or any shared PC:

@@ -50,3 +50,18 @@ def render_csv(records: list[dict], include_sensitive: bool = False) -> str:
     for rec in records:
         w.writerow(row_for(rec, include_sensitive))
     return out.getvalue()
+
+
+def form_progress(rec: dict) -> tuple[int, int]:
+    """(filled, total) over the Paykings form fields that are collected (skipped columns left out)."""
+    filled = total = 0
+    for col, spec in COLUMN_TO_SPEC.items():
+        if not spec or col in SKIPPED_COLUMNS:
+            continue
+        total += 1
+        try:
+            v = R.get_field(rec, fields.spec_keys(spec))["value"]
+        except R.RecordError:
+            v = None
+        filled += v not in (None, "")
+    return filled, total

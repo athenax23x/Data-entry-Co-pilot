@@ -27,6 +27,7 @@ export interface MerchantRecord {
 export interface Summary {
   merchant_id: string; legal_name: string | null; entity_type: string | null;
   record_status: string; version: number; updated_at: string;
+  archived?: boolean; filled?: number | null; total?: number | null; open_conflicts?: number | null;
 }
 export interface RecordReply {
   merchant_id: string; version: number; record: MerchantRecord;
@@ -91,8 +92,17 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return data as T;
 }
 
-export const listMerchants = (q: string) =>
-  call<{ merchants: Summary[] }>("GET", "/api/merchants" + (q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""));
+export function listMerchants(q: string, archived = false) {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  if (archived) params.set("archived", "true");
+  return call<{ merchants: Summary[] }>("GET", "/api/merchants" + (params.size ? `?${params}` : ""));
+}
+export const duplicateMerchant = (id: string) => call<RecordReply>("POST", `/api/merchants/${encodeURIComponent(id)}/duplicate`);
+export const archiveMerchant = (id: string, archived: boolean) =>
+  call<{ merchant_id: string; archived: boolean }>("POST", `/api/merchants/${encodeURIComponent(id)}/archive`, { archived });
+export const deleteMerchant = (id: string, expected_version: number) =>
+  call<{ merchant_id: string; deleted: boolean }>("DELETE", `/api/merchants/${encodeURIComponent(id)}?expected_version=${expected_version}`);
 export const createMerchant = (text: string) => call<RecordReply>("POST", "/api/merchants", { text });
 export const getMerchant = (id: string) => call<RecordReply>("GET", `/api/merchants/${encodeURIComponent(id)}`);
 export const updateField = (id: string, path: string, body: { expected_version: number; action: "set" | "confirm" | "missing"; value?: string }) =>

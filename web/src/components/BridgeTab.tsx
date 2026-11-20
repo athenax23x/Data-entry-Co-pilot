@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import { fieldLabel } from "../labels";
 import { COPY_WARNING, errorMessage, isStale, outcomeLabel, statusLabel } from "../status";
@@ -10,10 +10,12 @@ interface Props {
   /** Sends the chosen proposals; resolves true when they were stored (the workspace updates its record). */
   onApply: (answer: string, sourceText: string, accept: number[]) => Promise<boolean>;
   onStale: () => void;
+  /** Text pasted on the list page ("Tempel cepat"): filled in and prepared right away. */
+  initialSource?: string | null;
 }
 
-export default function BridgeTab({ merchantId, version, onApply, onStale }: Props) {
-  const [source, setSource] = useState("");
+export default function BridgeTab({ merchantId, version, onApply, onStale, initialSource }: Props) {
+  const [source, setSource] = useState(initialSource ?? "");
   const [prepared, setPrepared] = useState<api.BridgePrepared | null>(null);
   const [answer, setAnswer] = useState("");
   const [proposals, setProposals] = useState<api.BridgeProposal[] | null>(null);
@@ -41,6 +43,12 @@ export default function BridgeTab({ merchantId, version, onApply, onStale }: Pro
     const r = await guard(() => api.bridgePrepare(source));
     if (r) { setPrepared(r); setProposals(null); }
   };
+
+  const started = useRef(false);
+  useEffect(() => {
+    if (initialSource && initialSource.trim() && !started.current) { started.current = true; void prepare(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function copy() {
     if (!prepared) return;

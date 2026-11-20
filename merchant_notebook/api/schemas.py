@@ -16,6 +16,10 @@ class NewMerchant(_Body):
     text: Optional[str] = Field(default=None, max_length=TEXT_MAX)
 
 
+class Archive(_Body):
+    archived: bool = True
+
+
 class FieldUpdate(_Body):
     expected_version: int = Field(ge=1)
     action: Literal["set", "confirm", "missing"] = "set"
