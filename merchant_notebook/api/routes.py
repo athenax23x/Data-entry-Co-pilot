@@ -128,13 +128,20 @@ async def review_merchant(request: Request, merchant_id: str):
     rec = store.load(merchant_id)[0]
     return {"merchant_id": merchant_id, "checks": review.checks(rec),
             "missing": [{k: it[k] for k in ("section", "label", "ask")} for it in review.missing(rec)],
-            "message": review.missing_message(rec), "stage": store.stage_of(merchant_id)}
+            "message": review.missing_message(rec), "stage": store.stage_of(merchant_id),
+            "app_status": store.app_status_of(merchant_id)}
 
 
 @router.post("/merchants/{merchant_id}/stage")
 async def set_stage(request: Request, merchant_id: str, body: schemas.Stage):
     _store(request).set_stage(merchant_id, body.stage, _now(request))
     return {"merchant_id": merchant_id, "stage": body.stage}
+
+
+@router.post("/merchants/{merchant_id}/application-status")
+async def set_app_status(request: Request, merchant_id: str, body: schemas.AppStatus):
+    _store(request).set_app_status(merchant_id, body.app_status, _now(request))
+    return {"merchant_id": merchant_id, "app_status": body.app_status}
 
 
 @router.post("/merchants/{merchant_id}/archive")

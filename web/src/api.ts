@@ -28,22 +28,29 @@ export interface Summary {
   merchant_id: string; legal_name: string | null; entity_type: string | null;
   record_status: string; version: number; updated_at: string;
   archived?: boolean; filled?: number | null; total?: number | null; open_conflicts?: number | null;
-  errors?: number | null; warnings?: number | null; stage?: Stage;
+  errors?: number | null; warnings?: number | null; stage?: Stage; app_status?: AppStatus;
 }
 
 // ---- M23-M25: checks, missing-info message, work stage
-export type Stage = "baru" | "menunggu_info" | "siap_diisi" | "sudah_diisi" | "disetujui" | "ditolak";
+export type Stage = "baru" | "menunggu_info" | "siap_diisi";
 export const STAGES: { key: Stage; label: string }[] = [
   { key: "baru", label: "Baru" },
   { key: "menunggu_info", label: "Menunggu info merchant" },
   { key: "siap_diisi", label: "Siap diisi" },
-  { key: "sudah_diisi", label: "Sudah diisi di Paykings" },
-  { key: "disetujui", label: "Disetujui" },
-  { key: "ditolak", label: "Ditolak" },
+];
+// Application status at Paykings (M27)
+export type AppStatus = "no_info" | "not_submitted" | "submitted" | "signed_waiting_underwriting" | "approved" | "declined";
+export const APP_STATUSES: { key: AppStatus; label: string }[] = [
+  { key: "no_info", label: "No info" },
+  { key: "not_submitted", label: "Not submitted" },
+  { key: "submitted", label: "Submitted" },
+  { key: "signed_waiting_underwriting", label: "Signed / waiting underwriting" },
+  { key: "approved", label: "Approved" },
+  { key: "declined", label: "Declined" },
 ];
 export interface Check { level: "error" | "warn"; code: string; message: string; fields: string[] }
 export interface Review {
-  merchant_id: string; checks: Check[]; stage: Stage; message: string;
+  merchant_id: string; checks: Check[]; stage: Stage; app_status: AppStatus; message: string;
   missing: { section: string; label: string; ask: string }[];
 }
 export interface RecordReply {
@@ -121,6 +128,8 @@ export const archiveMerchant = (id: string, archived: boolean) =>
 export const getReview = (id: string) => call<Review>("GET", `/api/merchants/${encodeURIComponent(id)}/review`);
 export const setStage = (id: string, stage: Stage) =>
   call<{ merchant_id: string; stage: Stage }>("POST", `/api/merchants/${encodeURIComponent(id)}/stage`, { stage });
+export const setAppStatus = (id: string, app_status: AppStatus) =>
+  call<{ merchant_id: string; app_status: AppStatus }>("POST", `/api/merchants/${encodeURIComponent(id)}/application-status`, { app_status });
 export const deleteMerchant = (id: string, expected_version: number) =>
   call<{ merchant_id: string; deleted: boolean }>("DELETE", `/api/merchants/${encodeURIComponent(id)}?expected_version=${expected_version}`);
 export const createMerchant = (text: string) => call<RecordReply>("POST", "/api/merchants", { text });

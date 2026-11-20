@@ -21,7 +21,11 @@ class Archive(_Body):
 
 
 class Stage(_Body):
-    stage: Literal["baru", "menunggu_info", "siap_diisi", "sudah_diisi", "disetujui", "ditolak"]
+    stage: Literal["baru", "menunggu_info", "siap_diisi"]
+
+
+class AppStatus(_Body):
+    app_status: Literal["no_info", "not_submitted", "submitted", "signed_waiting_underwriting", "approved", "declined"]
 
 
 class FieldUpdate(_Body):
