@@ -50,6 +50,11 @@ export function readToken(doc: Document = document): string | null {
   return value && value !== TOKEN_PLACEHOLDER ? value : null;
 }
 
+// Guest mode (python -m merchant_notebook.api --guest): the server puts 1 here. Used only to show a banner.
+export function isGuest(doc: Document = document): boolean {
+  return doc.querySelector('meta[name="mcn-guest"]')?.getAttribute("content") === "1";
+}
+
 export function getToken(): string | null {
   if (token === null) token = readToken();
   return token;

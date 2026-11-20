@@ -85,3 +85,5 @@ tr.rejected td { background: var(--conflict-bg); }
 [hidden] { display: none !important; }
 
 .export { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.guest-banner { background: #5a4300; color: #fff3cd; padding: 8px 16px; font-size: 14px; border-bottom: 1px solid #a07800; }

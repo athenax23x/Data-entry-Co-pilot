@@ -18,8 +18,27 @@ from .app import create_app
 from .security import HOST, PORT
 
 
-def serve(store_factory, open_browser: bool = False) -> None:
-    app = create_app(store_factory)
+def run_guest(open_browser: bool = True) -> int:
+    """Temporary database and random key; everything is deleted when the app stops (Ctrl+C)."""
+    import os
+    import shutil
+    import tempfile
+
+    from ..keys import StaticKeyProvider
+    tmp = Path(tempfile.mkdtemp(prefix="mcn-guest-"))
+    keys = StaticKeyProvider(os.urandom(32))
+    print("MODE TAMU: tidak ada yang disimpan; data sensitif ditolak; semua dihapus saat aplikasi berhenti (Ctrl+C).")
+    print(f"Merchant Notebook API on http://{HOST}:{PORT}/  (Ctrl-C to stop)")
+    try:
+        serve(lambda: SqliteMerchantStore(tmp / "merchants.db", keys), open_browser=open_browser, guest=True)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+        print("Data sementara dihapus.")
+    return 0
+
+
+def serve(store_factory, open_browser: bool = False, guest: bool = False) -> None:
+    app = create_app(store_factory, guest=guest)
     if open_browser:
         webbrowser.open(f"http://{HOST}:{PORT}/")
     uvicorn.run(app, host=HOST, port=PORT, access_log=False, log_level="warning")
@@ -29,7 +48,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m merchant_notebook.api")
     ap.add_argument("--data-dir", default="merchant_data", help="folder for merchants.db and the key file")
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--guest", action="store_true",
+                    help="for a computer you do not own: nothing is kept, sensitive data is refused (see api/guest.py)")
     args = ap.parse_args(argv)
+    if args.guest:
+        return run_guest(open_browser=not args.no_browser)
     data = Path(args.data_dir)
     keys = DpapiKeyProvider(data / "mcn.key")
     try:

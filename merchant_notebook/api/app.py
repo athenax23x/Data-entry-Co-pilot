@@ -16,11 +16,13 @@ from ..service import CommandError
 from ..sqlstore import (CorruptRecordError, NotFound, RefusedRecord, SqlStoreError, StaleRecordError)
 from ..store import StoreError
 from . import bridge_routes, routes, security
+from .guest import GuestRefused, GuestStore
 
 log = logging.getLogger("merchant_notebook.api")
 
 STATIC = Path(__file__).resolve().parent / "static"
 TOKEN_PLACEHOLDER = "__MCN_TOKEN__"
+GUEST_PLACEHOLDER = "__MCN_GUEST__"
 # Set explicitly: Windows may map .js to text/plain from the registry, which breaks module scripts.
 ASSET_TYPES = {".js": "text/javascript", ".css": "text/css", ".map": "application/json", ".svg": "image/svg+xml",
                ".png": "image/png", ".ico": "image/x-icon", ".woff2": "font/woff2"}
@@ -33,14 +35,14 @@ def _json(status: int, message: str) -> JSONResponse:
     return JSONResponse({"detail": message}, status_code=status)
 
 
-def create_app(store_factory, token: str | None = None, clock=None) -> FastAPI:
+def create_app(store_factory, token: str | None = None, clock=None, guest: bool = False) -> FastAPI:
     """store_factory() builds the SqliteMerchantStore on the server's own thread (SQLite connections are bound to
     the thread that made them). token: for tests; by default a new random one per run."""
     from contextlib import asynccontextmanager
 
     @asynccontextmanager
     async def lifespan(app):
-        app.state.store = store_factory()
+        app.state.store = GuestStore(store_factory()) if guest else store_factory()
         try:
             yield
         finally:
@@ -48,6 +50,7 @@ def create_app(store_factory, token: str | None = None, clock=None) -> FastAPI:
 
     app = FastAPI(title="Merchant Notebook API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.token = token or security.new_token()
+    app.state.guest = guest
     app.state.clock = clock or (lambda: datetime.now(timezone.utc))
 
     @app.middleware("http")
@@ -72,6 +75,7 @@ def create_app(store_factory, token: str | None = None, clock=None) -> FastAPI:
                     f'<meta name="mcn-token" content="{TOKEN_PLACEHOLDER}"><p>The UI is not built (cd web && npm run build).</p>')
         else:
             html = index.read_text(encoding="utf-8")
+        html = html.replace(GUEST_PLACEHOLDER, "1" if request.app.state.guest else "0")
         return HTMLResponse(html.replace(TOKEN_PLACEHOLDER, escape(request.app.state.token)))
 
     @app.get("/assets/{name}")
@@ -91,6 +95,10 @@ def create_app(store_factory, token: str | None = None, clock=None) -> FastAPI:
         fields = sorted({".".join(str(p) for p in e["loc"][1:] if p != "__root__") or str(e["loc"][0])
                          for e in exc.errors()})
         return JSONResponse({"detail": "The request is not valid.", "fields": fields}, status_code=422)
+
+    @app.exception_handler(GuestRefused)
+    async def guest_refused(request, exc):
+        return _json(403, str(exc))
 
     @app.exception_handler(NotFound)
     async def not_found(request, exc):

@@ -110,6 +110,16 @@ Rules: empty values in the required original columns (everything except `EIN / N
 
 - **Real-browser check (optional, developer):** `python tools/browser_smoke.py` starts the real server with a throwaway database and drives Chrome through the whole flow (click-to-copy, CSV download, Claude bridge, masking). Needs `pip install playwright` and Chrome; it is not part of `pytest`.
 
+## Guest mode for a computer you do not own (M18)
+
+`jalankan-tamu.bat` (or `python -m merchant_notebook.api --guest`) is for an internet cafe or any shared PC:
+
+- The database and a random key live in a temporary folder and are **deleted when the app stops** (Ctrl+C). Closing the window or pulling the plug can leave the folder behind (`mcn-guest-*` in the Windows temp folder); delete it by hand then. The deletion is an ordinary file delete, not a secure wipe.
+- **Sensitive values are refused** (SSN, last 4, driver licence, passport, bank account number): they are never typed or stored on that PC. Auto-fill from text, the Claude bridge, click-to-copy and the Paykings CSV (sensitive columns blank) all work.
+- The page shows a yellow "Mode tamu" banner.
+
+This reduces what stays behind. It does **not** protect against a keylogger, screen capture or a copied browser session on that PC, so: do not sign in to Paykings or Claude with a password you cannot change, sign out afterwards, and enter the sensitive fields only on your own device.
+
 ## Moving the data to another PC (M17)
 
 The database key is tied to one Windows account (DPAPI), so `merchants.db` and the backups open only on that account. To move merchants to another PC:
