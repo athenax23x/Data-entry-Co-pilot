@@ -56,3 +56,15 @@ describe("requests", () => {
     expect(set).not.toHaveBeenCalled();
   });
 });
+
+
+describe("guest mode flag", () => {
+  it("is on only when the page says 1", async () => {
+    const { isGuest } = await import("./api");
+    for (const [content, expected] of [["1", true], ["0", false], ["__MCN_GUEST__", false]] as const) {
+      const doc = new DOMParser().parseFromString(`<head><meta name="mcn-guest" content="${content}"></head>`, "text/html");
+      expect(isGuest(doc)).toBe(expected);
+    }
+    expect(isGuest(new DOMParser().parseFromString("<head></head>", "text/html"))).toBe(false);
+  });
+});

@@ -94,3 +94,41 @@ def test_generated_layout_is_up_to_date():
     spec.loader.exec_module(mod)
     current = (ROOT / "web" / "src" / "layout.generated.ts").read_text(encoding="utf-8")
     assert current.replace("\r\n", "\n") == mod.build(), "run: python tools/gen_layout.py"
+
+
+# ------------------------------------------------------------------ guest mode (M18)
+def test_the_page_carries_the_guest_flag_and_the_built_html_keeps_its_placeholder():
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    assert html.count('<meta name="mcn-guest" content="__MCN_GUEST__"') == 1
+
+
+def _guest_client(tmp_path, guest):
+    from fastapi.testclient import TestClient
+    from merchant_notebook import sqlstore as SQ
+    from merchant_notebook.keys import StaticKeyProvider
+    app = create_app(lambda: SQ.SqliteMerchantStore(tmp_path / "g.db", StaticKeyProvider(b"k" * 32)), token=TOKEN, guest=guest)
+    return TestClient(app, base_url="http://127.0.0.1:8765", headers={"Origin": "http://127.0.0.1:8765", TOKEN_HEADER: TOKEN})
+
+
+def test_guest_mode_shows_the_banner_flag_and_refuses_sensitive_values(tmp_path):
+    with _guest_client(tmp_path, True) as c:
+        assert 'name="mcn-guest" content="1"' in c.get("/").text
+        mid = c.post("/api/merchants", json={"text": "Example Goods LLC; owner@example.com"}).json()["merchant_id"]
+        v = c.get(f"/api/merchants/{mid}").json()["version"]
+        ok = c.patch(f"/api/merchants/{mid}/fields/business_information.legal_business_name",
+                     json={"expected_version": v, "action": "set", "value": "Example Goods Inc"})
+        assert ok.status_code == 200
+        bad = c.patch(f"/api/merchants/{mid}/fields/personal_information.owners[0].ssn",
+                      json={"expected_version": ok.json()["version"], "action": "set", "value": "123456" + "789"})
+        assert bad.status_code == 403 and "Mode tamu" in bad.json()["detail"] and "123456789" not in bad.text
+        assert c.get(f"/api/merchants/{mid}").json()["record"]["personal_information"]["owners"][0]["ssn"]["value"] in (None, "")
+
+
+def test_normal_mode_has_no_guest_flag_and_accepts_the_same_value(tmp_path):
+    with _guest_client(tmp_path, False) as c:
+        assert 'name="mcn-guest" content="0"' in c.get("/").text
+        mid = c.post("/api/merchants", json={"text": "Example Goods LLC; owner@example.com"}).json()["merchant_id"]
+        v = c.get(f"/api/merchants/{mid}").json()["version"]
+        r = c.patch(f"/api/merchants/{mid}/fields/personal_information.owners[0].ssn",
+                    json={"expected_version": v, "action": "set", "value": "123456" + "789"})
+        assert r.status_code == 200

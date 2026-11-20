@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isGuest } from "./api";
 import MerchantList from "./screens/MerchantList";
 import NewMerchant from "./screens/NewMerchant";
 import Workspace from "./screens/Workspace";
@@ -26,6 +27,12 @@ export default function App() {
         <a href="#/" className="brand">Merchant Notebook</a>
         <span className="local">Lokal · data tampil penuh di layar ini</span>
       </header>
+      {isGuest() && (
+        <div className="guest-banner" role="status">
+          Mode tamu: tidak ada yang disimpan dan semua dihapus saat aplikasi ditutup. Data sensitif (SSN, SIM, paspor,
+          rekening) tidak diterima di komputer ini.
+        </div>
+      )}
       <main>
         {route.name === "list" && <MerchantList />}
         {route.name === "new" && <NewMerchant />}
